@@ -1,11 +1,26 @@
 cmake_minimum_required(VERSION 3.22)
 project(KillerBSynth VERSION 1.0.0)
 
+if(APPLE)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Minimum macOS version" FORCE)
+    set(CMAKE_OSX_ARCHITECTURES    "arm64;x86_64" CACHE STRING "Universal binary" FORCE)
+endif()
+
 # -----------------------------------------------------------------------
 # JUCE — expects a 'JUCE' subdirectory at the project root.
 # Clone it with: git submodule add https://github.com/juce-framework/JUCE.git
 # -----------------------------------------------------------------------
 add_subdirectory(JUCE)
+
+option(KILLERB_COPY_AFTER_BUILD "Copy plugin to system folder after build" ON)
+
+if(WIN32)
+    set(_VST3_DIR "C:/Program Files/Common Files/VST3")
+    set(_AU_DIR   "")
+elseif(APPLE)
+    set(_VST3_DIR "/Library/Audio/Plug-Ins/VST3")
+    set(_AU_DIR   "/Library/Audio/Plug-Ins/Components")
+endif()
 
 juce_add_binary_data(KillerBAssets
     SOURCES
@@ -16,6 +31,7 @@ juce_add_binary_data(KillerBAssets
 
 juce_add_plugin(KillerBSynth
     COMPANY_NAME            "KillerB"
+    BUNDLE_ID               "com.killerb.killerbsynth"
     PLUGIN_MANUFACTURER_CODE KlrB
     PLUGIN_CODE             Kb01
     IS_SYNTH                TRUE
@@ -23,7 +39,9 @@ juce_add_plugin(KillerBSynth
     NEEDS_MIDI_OUTPUT       FALSE
     IS_MIDI_EFFECT          FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS FALSE
-    COPY_PLUGIN_AFTER_BUILD TRUE
+    COPY_PLUGIN_AFTER_BUILD ${KILLERB_COPY_AFTER_BUILD}
+    VST3_COPY_DIR           "${_VST3_DIR}"
+    AU_COPY_DIR             "${_AU_DIR}"
     FORMATS                 VST3 AU Standalone
     PRODUCT_NAME            "Killer B Synth"
     DESCRIPTION             "Polyphonic Trap Synthesizer"

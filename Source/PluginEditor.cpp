@@ -270,6 +270,7 @@ void KillaBEditor::setupVertSlider (juce::Slider& slider, juce::Label& label, co
     slider.setSliderStyle (juce::Slider::LinearVertical);
     slider.setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
     slider.getProperties().set ("kbColour", "gold");
+    slider.getProperties().set ("kbAdsrSlider", true);
     addAndMakeVisible (slider);
 
     label.setText (text, juce::dontSendNotification);
@@ -457,16 +458,23 @@ void KillaBEditor::paintDistortionMeters (juce::Graphics& g, juce::Rectangle<int
 
 void KillaBEditor::paintMascotPlaceholder (juce::Graphics& g, juce::Rectangle<int> bounds)
 {
-    auto innerBounds = bounds.reduced (10, 18).translated (-10, 6);
+    auto innerBounds = bounds.reduced (12, 18);
 
     if (beeImage.isValid())
     {
         g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
-        g.setOpacity (0.98f);
-        g.drawImageWithin (beeImage,
-                           innerBounds.getX(), innerBounds.getY(), innerBounds.getWidth(), innerBounds.getHeight(),
-                           juce::RectanglePlacement::centred | juce::RectanglePlacement::fillDestination,
-                           true);
+        auto target = innerBounds.toFloat();
+        const auto imageBounds = beeImage.getBounds().toFloat();
+        const float scale = juce::jmin (target.getWidth() / imageBounds.getWidth(),
+                                        target.getHeight() / imageBounds.getHeight()) * 1.03f;
+        const float drawW = imageBounds.getWidth() * scale;
+        const float drawH = imageBounds.getHeight() * scale;
+        const float drawX = target.getRight() - drawW - 4.0f;
+        const float drawY = target.getBottom() - drawH - 2.0f;
+
+        g.setOpacity (1.0f);
+        g.drawImage (beeImage, drawX, drawY, drawW, drawH,
+                     imageBounds.getX(), imageBounds.getY(), imageBounds.getWidth(), imageBounds.getHeight());
         g.setOpacity (1.0f);
         return;
     }
@@ -483,15 +491,6 @@ void KillaBEditor::paintAdsrGuides (juce::Graphics& g, juce::Rectangle<int> boun
     g.setFont (juce::Font (juce::FontOptions ("Segoe UI", 12.0f, juce::Font::bold)).withExtraKerningFactor (0.18f));
     g.setColour (KBColours::textGold);
     g.drawText ("ADSR", bounds.removeFromTop (26), juce::Justification::centred);
-
-    auto body = bounds.reduced (14, 18);
-    auto columns = body.getWidth() / 4;
-    for (int i = 0; i < 4; ++i)
-    {
-        auto r = juce::Rectangle<int> (body.getX() + i * columns, body.getY(), columns, body.getHeight());
-        g.setColour (KBColours::gold.withAlpha (0.12f));
-        g.fillRect (r.getCentreX() - 2, r.getY(), 4, r.getHeight());
-    }
 }
 
 void KillaBEditor::paintEqGuides (juce::Graphics& g, juce::Rectangle<int> bounds)

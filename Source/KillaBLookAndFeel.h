@@ -405,15 +405,17 @@ public:
         const juce::String colTag    = slider.getProperties().getWithDefault ("kbColour", "gold");
         const juce::Colour accentCol = KBColours::fromTag (colTag);
         const bool isActive = slider.isMouseOverOrDragging();
+        const bool isAdsrSlider = slider.getProperties().getWithDefault ("kbAdsrSlider", false);
 
         const float cx       = (float) x + (float) width * 0.5f;
-        const float rodW     = 7.0f;
+        const float rodW     = isAdsrSlider ? 5.0f : 7.0f;
         const float rodX     = cx - rodW * 0.5f;
-        const float capH     = 10.0f;
+        const float capH     = isAdsrSlider ? 0.0f : 10.0f;
         const float trackTop = (float) y + capH;
         const float trackBot = (float)(y + height) - capH;
 
         // ── Top metal cap ─────────────────────────────────────────────────────
+        if (! isAdsrSlider)
         {
             juce::ColourGradient cap (
                 KBColours::goldLight.withAlpha (0.9f), rodX,          (float) y,
@@ -425,13 +427,16 @@ public:
         }
 
         // ── Rod body — dark tube ──────────────────────────────────────────────
-        g.setColour (KBColours::knobBody.brighter (0.06f));
+        g.setColour (isAdsrSlider ? KBColours::gold.withAlpha (0.10f)
+                                  : KBColours::knobBody.brighter (0.06f));
         g.fillRoundedRectangle (rodX, trackTop, rodW, trackBot - trackTop, 2.5f);
-        g.setColour (KBColours::goldRim.withAlpha (0.28f));
+        g.setColour (isAdsrSlider ? juce::Colours::transparentBlack
+                                  : KBColours::goldRim.withAlpha (0.28f));
         g.drawRoundedRectangle (rodX, trackTop, rodW, trackBot - trackTop, 2.5f, 0.7f);
 
         // Subtle specular line on rod
-        g.setColour (juce::Colours::white.withAlpha (0.07f));
+        g.setColour (isAdsrSlider ? juce::Colours::transparentBlack
+                                  : juce::Colours::white.withAlpha (0.07f));
         g.fillRoundedRectangle (rodX + 1.2f, trackTop, 2.2f, trackBot - trackTop, 1.5f);
 
         // ── Fill from bottom to thumb ─────────────────────────────────────────
@@ -489,6 +494,7 @@ public:
         }
 
         // ── Bottom metal cap ──────────────────────────────────────────────────
+        if (! isAdsrSlider)
         {
             juce::ColourGradient cap (
                 KBColours::goldDark,                  rodX,         trackBot - capH,

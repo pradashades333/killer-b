@@ -1,6 +1,7 @@
 build/
 .claude/
 Extras/
+_tmp_afroplug/
 .vs/
 .idea/
 *.user
