@@ -550,8 +550,6 @@ void KillaBEditor::paint (juce::Graphics& g)
     g.setColour (KBColours::textGold);
     g.drawText ("VOICES", centerArea.getX() + 155, centerArea.getBottom() - 78, 120, 14, juce::Justification::centred);
     g.drawText ("COMPRESSOR", compArea.getX() + 128, compArea.getY() + 104, 160, 14, juce::Justification::centred);
-    g.drawText ("LFO Routing", lfoArea.getX() + 34, lfoArea.getY() + 96, 92, 14, juce::Justification::centred);
-    g.drawText ("LFO Type", lfoArea.getX() + 40, lfoArea.getY() + 160, 84, 14, juce::Justification::centred);
 }
 
 void KillaBEditor::resized()
@@ -589,10 +587,10 @@ void KillaBEditor::resized()
     waveArea.removeFromTop (52);
     waveDisplay.setBounds (waveArea.withTrimmedRight (36).withTrimmedBottom (108).withTrimmedLeft (6));
 
-    auto bottom = bottomArea.reduced (20, 8);
-    eqArea = bottom.removeFromLeft (560);
-    adsrArea = bottom.removeFromLeft (180);
-    lfoArea = bottom.removeFromLeft (180);
+    auto bottom = bottomArea.reduced (16, 8);
+    eqArea = bottom.removeFromLeft (540);
+    adsrArea = bottom.removeFromLeft (190);
+    lfoArea = bottom.removeFromLeft (170);
     mascotArea = bottom;
 
     presetTitleLabel.setBounds (430, 52, 150, 18);
@@ -664,7 +662,7 @@ void KillaBEditor::resized()
     eqHighKnob.setBounds (eqArea.getX() + 302, eqArea.getY() + 86, 92, 92);
     eqHighLabel.setBounds (eqArea.getX() + 312, eqArea.getY() + 176, 70, 14);
 
-    auto adsrBody = adsrArea.reduced (14, 42);
+    auto adsrBody = adsrArea.reduced (10, 42);
     const int sliderW = adsrBody.getWidth() / 4;
     attackSlider.setBounds (adsrBody.getX(), adsrBody.getY() + 28, sliderW, adsrBody.getHeight() - 34);
     decaySlider.setBounds (adsrBody.getX() + sliderW, adsrBody.getY() + 28, sliderW, adsrBody.getHeight() - 34);
@@ -675,14 +673,14 @@ void KillaBEditor::resized()
     sustainLabel.setBounds (adsrBody.getX() + sliderW * 2, adsrArea.getY() + 26, sliderW, 14);
     releaseLabel.setBounds (adsrBody.getX() + sliderW * 3, adsrArea.getY() + 26, sliderW, 14);
 
-    lfoRoutingBox.setBounds (lfoArea.getX() + 18, lfoArea.getY() + 62, 110, 24);
-    lfoRoutingLabel.setBounds (lfoArea.getX() + 18, lfoArea.getY() + 92, 110, 14);
-    lfoTypeBox.setBounds (lfoArea.getX() + 18, lfoArea.getY() + 126, 110, 24);
-    lfoTypeLabel.setBounds (lfoArea.getX() + 18, lfoArea.getY() + 156, 110, 14);
-    lfoRateKnob.setBounds (lfoArea.getX() + 6, lfoArea.getBottom() - 98, 54, 54);
-    lfoRateLabel.setBounds (lfoArea.getX() + 0, lfoArea.getBottom() - 40, 70, 14);
-    lfoDepthKnob.setBounds (lfoArea.getX() + 64, lfoArea.getBottom() - 98, 54, 54);
-    lfoDepthLabel.setBounds (lfoArea.getX() + 58, lfoArea.getBottom() - 40, 76, 14);
+    lfoRoutingBox.setBounds (lfoArea.getX() + 12, lfoArea.getY() + 62, 110, 24);
+    lfoRoutingLabel.setBounds (lfoArea.getX() + 12, lfoArea.getY() + 92, 110, 14);
+    lfoTypeBox.setBounds (lfoArea.getX() + 12, lfoArea.getY() + 126, 110, 24);
+    lfoTypeLabel.setBounds (lfoArea.getX() + 12, lfoArea.getY() + 156, 110, 14);
+    lfoRateKnob.setBounds (lfoArea.getX() + 0, lfoArea.getBottom() - 98, 54, 54);
+    lfoRateLabel.setBounds (lfoArea.getX() - 6, lfoArea.getBottom() - 40, 70, 14);
+    lfoDepthKnob.setBounds (lfoArea.getX() + 58, lfoArea.getBottom() - 98, 54, 54);
+    lfoDepthLabel.setBounds (lfoArea.getX() + 52, lfoArea.getBottom() - 40, 76, 14);
 
     auto keyboardBounds = keyboardArea.reduced (0, 6);
     keyboard.setBounds (keyboardBounds);
