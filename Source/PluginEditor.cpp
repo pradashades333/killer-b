@@ -102,9 +102,9 @@ KillaBEditor::KillaBEditor (KillerBProcessor& p)
     setLookAndFeel (&laf);
     setSize (1110, 1110);
 
-    topLeftLogoImage = loadBinaryImageIfPresent ("KILLA B.png");
-    centerBrandImage = loadBinaryImageIfPresent ("TURNE ME UP.png");
-    beeImage = loadBinaryImageIfPresent ("GOLD BEE.png");
+    topLeftLogoImage = loadBinaryImageIfPresent ("KILLA_B_png");
+    centerBrandImage = loadBinaryImageIfPresent ("TURNE_ME_UP_png");
+    beeImage = loadBinaryImageIfPresent ("GOLD_BEE_png");
 
     setupCombo (presetCombo, presetTitleLabel, "PRESETS");
     presetCombo.addItem ("Bass - Dark Moog", 1);
