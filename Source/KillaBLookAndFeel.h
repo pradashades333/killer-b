@@ -214,13 +214,14 @@ public:
 
         const bool isHover = slider.isMouseOverOrDragging();
         const bool isActive = isHover || sliderPosProportional > 0.01f;
+        const bool glowEnabled = slider.getProperties().getWithDefault ("kbGlowEnabled", false);
         const float hoverScale = isHover ? 1.04f : 1.0f;
         const float radius = baseRadius * hoverScale;
         constexpr float kGlowBase = 0.12f;
         constexpr float kGlowHover = 0.19f;
 
         // ── 0. Active outer glow ────────────────────────────────────────────
-        if (isActive)
+        if (glowEnabled && isActive)
         {
             for (int i = 4; i >= 1; --i)
             {
