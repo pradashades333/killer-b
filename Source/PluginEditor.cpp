@@ -10,6 +10,26 @@ namespace FXMeta
     static const char* mixLabels[] = { "mix", "mix", "mix", "mix" };
 }
 
+namespace
+{
+    int countWhiteKeysInRange (int lowNote, int highNote)
+    {
+        int count = 0;
+        for (int note = lowNote; note <= highNote; ++note)
+        {
+            switch (note % 12)
+            {
+                case 1: case 3: case 6: case 8: case 10:
+                    break;
+                default:
+                    ++count;
+                    break;
+            }
+        }
+        return count;
+    }
+}
+
 void SegmentedMeterBar::paint (juce::Graphics& g)
 {
     const auto bounds = getLocalBounds().toFloat();
@@ -219,8 +239,7 @@ KillaBEditor::KillaBEditor (KillerBProcessor& p)
     setupPassiveKnob (lfoRateKnob, lfoRateLabel, "lfo rate");
     setupPassiveKnob (lfoDepthKnob, lfoDepthLabel, "lfo depth");
 
-    keyboard.setKeyWidth (19.0f);
-    keyboard.setAvailableRange (24, 96);
+    keyboard.setAvailableRange (24, 108);
     addAndMakeVisible (keyboard);
 
     startTimerHz (30);
@@ -438,14 +457,15 @@ void KillaBEditor::paintDistortionMeters (juce::Graphics& g, juce::Rectangle<int
 
 void KillaBEditor::paintMascotPlaceholder (juce::Graphics& g, juce::Rectangle<int> bounds)
 {
-    auto innerBounds = bounds.reduced (8, 18);
+    auto innerBounds = bounds.reduced (10, 18).translated (-10, 6);
 
     if (beeImage.isValid())
     {
+        g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
         g.setOpacity (0.98f);
         g.drawImageWithin (beeImage,
                            innerBounds.getX(), innerBounds.getY(), innerBounds.getWidth(), innerBounds.getHeight(),
-                           juce::RectanglePlacement::centred,
+                           juce::RectanglePlacement::centred | juce::RectanglePlacement::fillDestination,
                            true);
         g.setOpacity (1.0f);
         return;
@@ -601,8 +621,11 @@ void KillaBEditor::resized()
     filterSlopeBox.setBounds (centerArea.getX() + 212, centerArea.getY() + 10, 130, 26);
     filterSlopeLabel.setBounds (centerArea.getX() + 212, centerArea.getY() + 42, 130, 14);
     orbArea = juce::Rectangle<int> (centerArea.getX() + 70, centerArea.getY() + 164, 250, 250);
-    masterGainKnob.setBounds (centerArea.getX() + 122, centerArea.getY() + 234, 146, 146);
-    masterGainLabel.setBounds (centerArea.getX() + 146, centerArea.getY() + 382, 100, 14);
+    const int masterKnobSize = 184;
+    masterGainKnob.setBounds (orbArea.getCentreX() - masterKnobSize / 2,
+                              orbArea.getCentreY() - masterKnobSize / 2 + 14,
+                              masterKnobSize, masterKnobSize);
+    masterGainLabel.setBounds (centerArea.getX() + 136, centerArea.getY() + 390, 120, 14);
     glideKnob.setBounds (centerArea.getX() + 22, centerArea.getBottom() - 180, 44, 44);
     glideLabel.setBounds (centerArea.getX() + 8, centerArea.getBottom() - 142, 72, 14);
     cutoffKnob.setBounds (centerArea.getX() + 22, centerArea.getBottom() - 124, 44, 44);
@@ -627,7 +650,7 @@ void KillaBEditor::resized()
     compReleaseLabel.setBounds (compStartX + 2 * compStep - 12, compY + 36, 64, 14);
     compMixLabel.setBounds (compStartX + 3 * compStep - 10, compY + 36, 54, 14);
     compRatioLabel.setBounds (compStartX + 4 * compStep - 10, compY + 36, 54, 14);
-    masterGainKnob.toFront (false);
+    masterGainKnob.toFront (true);
 
     const int meterY = eqArea.getY() + 36;
     const int meterH = 220;
@@ -661,7 +684,9 @@ void KillaBEditor::resized()
     lfoDepthKnob.setBounds (lfoArea.getX() + 64, lfoArea.getBottom() - 98, 54, 54);
     lfoDepthLabel.setBounds (lfoArea.getX() + 58, lfoArea.getBottom() - 40, 76, 14);
 
-    keyboard.setBounds (keyboardArea.reduced (8, 6));
+    auto keyboardBounds = keyboardArea.reduced (0, 6);
+    keyboard.setBounds (keyboardBounds);
+    keyboard.setKeyWidth ((float) keyboardBounds.getWidth() / (float) countWhiteKeysInRange (24, 108));
 
     osc1TypeBox.setBounds (0, 0, 0, 0);
     osc2TypeBox.setBounds (0, 0, 0, 0);
