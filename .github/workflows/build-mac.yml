@@ -1,4 +1,4 @@
-name: Build Killer B Synth
+name: Build macOS Plugins
 
 on:
   push:
@@ -33,12 +33,14 @@ jobs:
         run: |
           VST3=$(find build -name "*.vst3" -type d | head -1)
           [ -z "$VST3" ] && echo "ERROR: VST3 not found" && exit 1
+          echo "Signing VST3: $VST3"
           codesign --force --deep --sign - "$VST3"
 
       - name: Ad-hoc sign AU
         run: |
           AU=$(find build -name "*.component" -type d | head -1)
           [ -z "$AU" ] && echo "ERROR: AU not found" && exit 1
+          echo "Signing AU: $AU"
           codesign --force --deep --sign - "$AU"
 
       - name: Build .pkg installer
@@ -49,6 +51,8 @@ jobs:
           AU=$(find build -name "*.component" -type d | head -1)
           [ -z "$VST3" ] && echo "ERROR: VST3 not found" && exit 1
           [ -z "$AU" ] && echo "ERROR: AU not found" && exit 1
+          echo "VST3: $VST3"
+          echo "AU: $AU"
 
           mkdir -p pkg_stage/vst3/Library/Audio/Plug-Ins/VST3
           mkdir -p pkg_stage/au/Library/Audio/Plug-Ins/Components
@@ -75,37 +79,40 @@ jobs:
             --package-path . \
             "Killer-B-Synth-macOS-Installer.pkg"
 
+          ls -lh Killer-B-Synth-macOS-Installer.pkg
+
       - name: Upload macOS installer
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v4
         with:
           name: Killer-B-Synth-macOS-Installer
           path: Killer-B-Synth-macOS-Installer.pkg
+          if-no-files-found: error
 
-  build-windows:
-    runs-on: windows-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Configure CMake
+      - name: Package raw macOS bundles
         run: |
-          cmake -B build -G "Visual Studio 17 2022" -A x64 `
-            -DKILLERB_COPY_AFTER_BUILD=OFF
+          set -e
 
-      - name: Build VST3
-        run: cmake --build build --config Release --target KillerBSynth_VST3
+          VST3=$(find build -name "*.vst3" -type d | head -1)
+          AU=$(find build -name "*.component" -type d | head -1)
+          [ -z "$VST3" ] && echo "ERROR: VST3 not found" && exit 1
+          [ -z "$AU" ] && echo "ERROR: AU not found" && exit 1
 
-      - name: Package VST3
-        run: |
-          $vst3 = Get-ChildItem -Recurse -Filter "*.vst3" -Directory | Select-Object -First 1
-          if (-not $vst3) { throw "VST3 not found" }
-          Compress-Archive -Path $vst3.FullName -DestinationPath "$env:GITHUB_WORKSPACE\Killer-B-Synth-Windows-VST3.zip" -Force
+          cd "$(dirname "$VST3")"
+          zip -r "$GITHUB_WORKSPACE/Killer-B-Synth-macOS-VST3.zip" "$(basename "$VST3")"
 
-      - name: Upload Windows VST3
-        uses: actions/upload-artifact@v4.6.2
+          cd "$(dirname "$AU")"
+          zip -r "$GITHUB_WORKSPACE/Killer-B-Synth-macOS-AU.zip" "$(basename "$AU")"
+
+      - name: Upload raw macOS VST3
+        uses: actions/upload-artifact@v4
         with:
-          name: Killer-B-Synth-Windows-VST3
-          path: Killer-B-Synth-Windows-VST3.zip
+          name: Killer-B-Synth-macOS-VST3
+          path: Killer-B-Synth-macOS-VST3.zip
+          if-no-files-found: error
+
+      - name: Upload raw macOS AU
+        uses: actions/upload-artifact@v4
+        with:
+          name: Killer-B-Synth-macOS-AU
+          path: Killer-B-Synth-macOS-AU.zip
+          if-no-files-found: error
