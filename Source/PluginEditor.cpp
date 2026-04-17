@@ -1128,8 +1128,8 @@ void KillaBEditor::resized()
     driveKnob.setBounds (distArea.getX() + 30, distArea.getY() + 192, 72, 72);
     driveLabel.setBounds (distArea.getX() + 20, distArea.getY() + 268, 92, 14);
 
-    const int compStartX = compArea.getX() + 42;
-    const int compY = compArea.getBottom() - 74;
+    const int compStartX = compArea.getX() + 40;
+    const int compY = compArea.getBottom() - 76;
     const int compStep = 62;
     compThreshKnob.setBounds (compStartX + 0 * compStep, compY, 34, 34);
     compAttackKnob.setBounds (compStartX + 1 * compStep, compY, 34, 34);
