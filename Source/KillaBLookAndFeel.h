@@ -649,7 +649,7 @@ public:
 
         // ── Metallic thumb bar ────────────────────────────────────────────────
         {
-            const float tH = 13.0f;
+            const float tH = 14.0f;
             const float tW = rodW + 16.0f;
             const float tX = cx - tW * 0.5f;
             const float tY = sliderPos - tH * 0.5f;
