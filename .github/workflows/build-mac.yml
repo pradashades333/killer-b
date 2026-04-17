@@ -87,32 +87,3 @@ jobs:
           name: Killer-B-Synth-macOS-Installer
           path: Killer-B-Synth-macOS-Installer.pkg
           if-no-files-found: error
-
-      - name: Package raw macOS bundles
-        run: |
-          set -e
-
-          VST3=$(find build -name "*.vst3" -type d | head -1)
-          AU=$(find build -name "*.component" -type d | head -1)
-          [ -z "$VST3" ] && echo "ERROR: VST3 not found" && exit 1
-          [ -z "$AU" ] && echo "ERROR: AU not found" && exit 1
-
-          cd "$(dirname "$VST3")"
-          zip -r "$GITHUB_WORKSPACE/Killer-B-Synth-macOS-VST3.zip" "$(basename "$VST3")"
-
-          cd "$(dirname "$AU")"
-          zip -r "$GITHUB_WORKSPACE/Killer-B-Synth-macOS-AU.zip" "$(basename "$AU")"
-
-      - name: Upload raw macOS VST3
-        uses: actions/upload-artifact@v4
-        with:
-          name: Killer-B-Synth-macOS-VST3
-          path: Killer-B-Synth-macOS-VST3.zip
-          if-no-files-found: error
-
-      - name: Upload raw macOS AU
-        uses: actions/upload-artifact@v4
-        with:
-          name: Killer-B-Synth-macOS-AU
-          path: Killer-B-Synth-macOS-AU.zip
-          if-no-files-found: error
