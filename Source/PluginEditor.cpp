@@ -120,7 +120,9 @@ KillaBEditor::KillaBEditor (KillerBProcessor& p)
     };
 
     setLookAndFeel (&laf);
-    setSize (1110, 1110);
+    setResizable (true, true);
+    setResizeLimits (820, 700, 1110, 1110);
+    setSize (920, 780);
 
     topLeftLogoImage = loadBinaryImageIfPresent ("KILLA_B_png");
     centerBrandImage = loadBinaryImageIfPresent ("TURNE_ME_UP_png");

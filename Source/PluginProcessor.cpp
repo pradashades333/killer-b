@@ -187,6 +187,17 @@ void KillerBProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 
 void KillerBProcessor::releaseResources() {}
 
+#ifndef JucePlugin_PreferredChannelConfigurations
+bool KillerBProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+{
+    if (layouts.getMainInputChannelSet() != juce::AudioChannelSet::disabled())
+        return false;
+
+    const auto& out = layouts.getMainOutputChannelSet();
+    return out == juce::AudioChannelSet::mono() || out == juce::AudioChannelSet::stereo();
+}
+#endif
+
 // ---------------------------------------------------------------------------
 // Audio processing
 // ---------------------------------------------------------------------------
