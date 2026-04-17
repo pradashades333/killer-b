@@ -344,7 +344,7 @@ void WaveformDisplay::paint (juce::Graphics& g)
         const float t = (float) i / (float) points;
         const float x = b.getX() + t * b.getWidth();
         const float s = std::sin (t * juce::MathConstants<float>::twoPi * 1.8f + phase);
-        const float y = b.getCentreY() - std::tanh (s * drive) * normFactor * b.getHeight() * 0.30f;
+        const float y = b.getCentreY() - std::tanh (s * drive) * normFactor * b.getHeight() * 0.32f;
         if (i == 0) wave.startNewSubPath (x, y);
         else wave.lineTo (x, y);
     }
