@@ -1,7 +1,10 @@
 build/
 build_ci/
 .claude/
-Extras/
+/Extras/
+/JUCE/extras/*
+!/JUCE/extras/Build/
+!/JUCE/extras/Build/**
 _tmp_afroplug/
 .vs/
 .idea/
