@@ -491,7 +491,7 @@ KillaBEditor::KillaBEditor (KillerBProcessor& p)
     keyboard.setAvailableRange (24, 108);
     addAndMakeVisible (keyboard);
 
-    startTimerHz (30);
+    startTimerHz (33);
 }
 
 KillaBEditor::~KillaBEditor()
@@ -647,7 +647,7 @@ void KillaBEditor::timerCallback()
     meterBarMid.repaint();
     meterBarHigh.repaint();
 
-    wavePhase += 0.05f;
+    wavePhase += 0.06f;
     orbitAngle += 0.014f;
 
     const float driveRaw = processorRef.apvts.getRawParameterValue ("drive")->load();
