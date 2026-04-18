@@ -246,9 +246,9 @@ public:
         // ── 1. Drop shadow ──────────────────────────────────────────────────
         for (int i = 5; i >= 1; --i)
         {
-            const float s = radius + (float) i * 1.6f;
-            g.setColour (juce::Colours::black.withAlpha (0.28f / (float) i));
-            g.fillEllipse (cx - s, cy - s + 4.0f, s * 2.0f, s * 2.0f);
+            const float s = radius + (float) i * 1.8f;
+            g.setColour (juce::Colours::black.withAlpha (0.30f / (float) i));
+            g.fillEllipse (cx - s, cy - s + 5.0f, s * 2.0f, s * 2.0f);
         }
 
         // ── 2. Arc track groove ─────────────────────────────────────────────
