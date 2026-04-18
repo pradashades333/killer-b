@@ -1016,7 +1016,7 @@ void KillaBEditor::resized()
     lfoDepthKnob.setBounds (lfoArea.getX() + 58, lfoArea.getBottom() - 98, 54, 54);
     lfoDepthLabel.setBounds (lfoArea.getX() + 52, lfoArea.getBottom() - 40, 76, 14);
 
-    auto keyboardBounds = keyboardArea.reduced (0, 6);
+    auto keyboardBounds = keyboardArea.reduced (0, 5);
     keyboard.setBounds (keyboardBounds);
     keyboard.setKeyWidth ((float) keyboardBounds.getWidth() / (float) countWhiteKeysInRange (24, 108));
 
