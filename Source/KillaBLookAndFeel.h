@@ -100,7 +100,7 @@ public:
 
         // 2. Diagonal brushed-metal grain
         g.setColour (juce::Colours::white.withAlpha (0.010f));
-        for (int d = 0; d < w + h; d += 4)
+        for (int d = 0; d < w + h; d += 5)
         {
             const float x1 = (float) juce::jmax (0, d - h);
             const float y1 = (float) juce::jmin (h, d);
