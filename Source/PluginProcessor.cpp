@@ -407,8 +407,55 @@ void KillerBProcessor::getStateInformation (juce::MemoryBlock& destData)
 void KillerBProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     if (auto xml = getXmlFromBinary (data, sizeInBytes))
-        if (xml->hasTagName (apvts.state.getType()))
-            apvts.replaceState (juce::ValueTree::fromXml (*xml));
+        loadPresetXml (*xml);
+}
+
+bool KillerBProcessor::savePresetToFile (const juce::File& file, const juce::String& presetName)
+{
+    auto target = file;
+    if (! target.hasFileExtension (".kbpreset"))
+        target = target.withFileExtension (".kbpreset");
+
+    if (auto parent = target.getParentDirectory(); parent != juce::File())
+        parent.createDirectory();
+
+    auto state = apvts.copyState();
+    state.setProperty ("presetName", presetName, nullptr);
+
+    if (auto xml = state.createXml())
+        return xml->writeTo (target);
+
+    return false;
+}
+
+bool KillerBProcessor::loadPresetFromFile (const juce::File& file)
+{
+    if (! file.existsAsFile())
+        return false;
+
+    if (auto xml = juce::XmlDocument::parse (file))
+        return loadPresetXml (*xml);
+
+    return false;
+}
+
+juce::File KillerBProcessor::getUserPresetDirectory()
+{
+    return juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
+        .getChildFile ("Killer B Synth Presets");
+}
+
+bool KillerBProcessor::loadPresetXml (const juce::XmlElement& xml)
+{
+    if (! xml.hasTagName (apvts.state.getType()))
+        return false;
+
+    auto state = juce::ValueTree::fromXml (xml);
+    if (! state.isValid())
+        return false;
+
+    apvts.replaceState (state);
+    return true;
 }
 
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
