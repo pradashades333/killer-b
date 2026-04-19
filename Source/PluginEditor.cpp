@@ -280,6 +280,31 @@ namespace
         }
         return count;
     }
+
+    constexpr int userPresetIdBase = 1000;
+    constexpr int savePresetItemId = 9001;
+    constexpr int loadPresetItemId = 9002;
+    constexpr int refreshPresetsItemId = 9003;
+
+    juce::String makeSafePresetFileName (juce::String name)
+    {
+        name = name.trim();
+        if (name.isEmpty())
+            name = "Killer B Preset";
+
+        for (auto c : juce::String ("\\/:*?\"<>|"))
+            name = name.replaceCharacter (c, '-');
+
+        return name;
+    }
+
+    struct FileNameComparator
+    {
+        static int compareElements (const juce::File& a, const juce::File& b)
+        {
+            return a.getFileName().compareIgnoreCase (b.getFileName());
+        }
+    };
 }
 
 void SegmentedMeterBar::paint (juce::Graphics& g)
@@ -433,6 +458,7 @@ KillaBEditor::KillaBEditor (KillerBProcessor& p)
     oscMixAttach = std::make_unique<SA> (processorRef.apvts, "oscmix", oscMixKnob);
 
     setupKnob (masterGainKnob, masterGainLabel, "GAIN", "gold");
+    masterGainKnob.getProperties().set ("kbUseGainFilmstrip", true);
     masterGainAttach = std::make_unique<SA> (processorRef.apvts, "MASTER_GAIN", masterGainKnob);
 
     setupKnob (glideKnob, glideLabel, "glide", "gold");
@@ -551,6 +577,7 @@ void KillaBEditor::populateFactoryPresets()
     presetCombo.clear (juce::dontSendNotification);
     presetCombo.setTextWhenNothingSelected ("Choose preset");
     presetCombo.setJustificationType (juce::Justification::centredLeft);
+    refreshUserPresetFiles();
 
     auto displayCategory = [] (juce::String category)
     {
@@ -583,15 +610,77 @@ void KillaBEditor::populateFactoryPresets()
         presetCombo.addItem (presetName.fromFirstOccurrenceOf (" - ", false, false), (int) i + 1);
     }
 
+    if (! userPresetFiles.isEmpty())
+    {
+        presetCombo.addSeparator();
+        presetCombo.addSectionHeading ("USER PRESETS");
+
+        for (int i = 0; i < userPresetFiles.size(); ++i)
+            presetCombo.addItem (userPresetFiles.getReference (i).getFileNameWithoutExtension(), userPresetIdBase + i);
+    }
+
+    presetCombo.addSeparator();
+    presetCombo.addItem ("Save Current Preset...", savePresetItemId);
+    presetCombo.addItem ("Load Preset File...", loadPresetItemId);
+    presetCombo.addItem ("Refresh User Presets", refreshPresetsItemId);
+
     presetCombo.onChange = [this]
     {
         if (isApplyingFactoryPreset)
             return;
 
-        const int presetIndex = presetCombo.getSelectedId() - 1;
-        if (juce::isPositiveAndBelow (presetIndex, (int) factoryPresets.size()))
-            applyFactoryPreset (presetIndex);
+        const int selectedId = presetCombo.getSelectedId();
+        const int factoryPresetIndex = selectedId - 1;
+        const int userPresetIndex = selectedId - userPresetIdBase;
+
+        if (juce::isPositiveAndBelow (factoryPresetIndex, (int) factoryPresets.size()))
+        {
+            applyFactoryPreset (factoryPresetIndex);
+            return;
+        }
+
+        if (juce::isPositiveAndBelow (userPresetIndex, userPresetFiles.size()))
+        {
+            applyUserPreset (userPresetIndex);
+            return;
+        }
+
+        if (selectedId == savePresetItemId)
+        {
+            launchPresetSaveChooser();
+            return;
+        }
+
+        if (selectedId == loadPresetItemId)
+        {
+            launchPresetLoadChooser();
+            return;
+        }
+
+        if (selectedId == refreshPresetsItemId)
+        {
+            populateFactoryPresets();
+            resetPresetSelection();
+        }
     };
+}
+
+void KillaBEditor::refreshUserPresetFiles()
+{
+    userPresetFiles.clear();
+
+    auto presetDirectory = KillerBProcessor::getUserPresetDirectory();
+    presetDirectory.createDirectory();
+
+    juce::Array<juce::File> files;
+    presetDirectory.findChildFiles (files, juce::File::findFiles, false, "*.kbpreset");
+    presetDirectory.findChildFiles (files, juce::File::findFiles, false, "*.xml");
+    FileNameComparator comparator;
+    files.sort (comparator);
+
+    for (const auto& file : files)
+        if (! userPresetFiles.contains (file))
+            userPresetFiles.add (file);
 }
 
 void KillaBEditor::applyFactoryPreset (int presetIndex)
@@ -623,6 +712,87 @@ void KillaBEditor::applyFactoryPreset (int presetIndex)
     lfoDepthKnob.setValue (preset.uiKnobs.lfoDepth, juce::sendNotificationSync);
 
     presetCombo.setSelectedId (presetIndex + 1, juce::dontSendNotification);
+}
+
+void KillaBEditor::applyUserPreset (int presetIndex)
+{
+    if (! juce::isPositiveAndBelow (presetIndex, userPresetFiles.size()))
+        return;
+
+    juce::ScopedValueSetter<bool> applyingPreset (isApplyingFactoryPreset, true);
+
+    if (processorRef.loadPresetFromFile (userPresetFiles.getReference (presetIndex)))
+        presetCombo.setSelectedId (userPresetIdBase + presetIndex, juce::dontSendNotification);
+    else
+        resetPresetSelection();
+}
+
+void KillaBEditor::launchPresetLoadChooser()
+{
+    resetPresetSelection();
+
+    presetFileChooser = std::make_unique<juce::FileChooser> (
+        "Load Killer B preset",
+        KillerBProcessor::getUserPresetDirectory(),
+        "*.kbpreset;*.xml");
+
+    juce::Component::SafePointer<KillaBEditor> safeThis (this);
+    presetFileChooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                                    [safeThis] (const juce::FileChooser& chooser)
+    {
+        if (safeThis == nullptr)
+            return;
+
+        const auto file = chooser.getResult();
+        if (file.existsAsFile())
+        {
+            safeThis->processorRef.loadPresetFromFile (file);
+            safeThis->populateFactoryPresets();
+        }
+
+        safeThis->resetPresetSelection();
+        safeThis->presetFileChooser.reset();
+    });
+}
+
+void KillaBEditor::launchPresetSaveChooser()
+{
+    resetPresetSelection();
+
+    const auto directory = KillerBProcessor::getUserPresetDirectory();
+    directory.createDirectory();
+
+    presetFileChooser = std::make_unique<juce::FileChooser> (
+        "Save Killer B preset",
+        directory.getChildFile ("Killer B Preset.kbpreset"),
+        "*.kbpreset");
+
+    juce::Component::SafePointer<KillaBEditor> safeThis (this);
+    presetFileChooser->launchAsync (juce::FileBrowserComponent::saveMode
+                                        | juce::FileBrowserComponent::canSelectFiles
+                                        | juce::FileBrowserComponent::warnAboutOverwriting,
+                                    [safeThis] (const juce::FileChooser& chooser)
+    {
+        if (safeThis == nullptr)
+            return;
+
+        auto file = chooser.getResult();
+        if (file != juce::File())
+        {
+            auto presetName = makeSafePresetFileName (file.getFileNameWithoutExtension());
+            safeThis->processorRef.savePresetToFile (file, presetName);
+            safeThis->populateFactoryPresets();
+        }
+
+        safeThis->resetPresetSelection();
+        safeThis->presetFileChooser.reset();
+    });
+}
+
+void KillaBEditor::resetPresetSelection()
+{
+    presetCombo.setSelectedId (0, juce::dontSendNotification);
+    presetCombo.setTextWhenNothingSelected ("Choose preset");
 }
 
 void KillaBEditor::timerCallback()
@@ -801,8 +971,7 @@ void KillaBEditor::paintMascotPlaceholder (juce::Graphics& g, juce::Rectangle<in
         const float drawY = target.getBottom() - drawH - 2.0f;
 
         g.setOpacity (1.0f);
-        g.drawImage (beeImage, drawX, drawY, drawW, drawH,
-                     imageBounds.getX(), imageBounds.getY(), imageBounds.getWidth(), imageBounds.getHeight());
+        g.drawImage (beeImage, juce::Rectangle<float> (drawX, drawY, drawW, drawH));
         g.setOpacity (1.0f);
         return;
     }
@@ -864,7 +1033,6 @@ void KillaBEditor::paint (juce::Graphics& g)
     paintPanel (g, mascotArea.reduced (0, 18), "");
 
     paintCenterBrand (g);
-    paintOrb (g, orbArea.toFloat());
     paintDistortionMeters (g, distArea);
     paintEqGuides (g, eqArea);
     paintAdsrGuides (g, adsrArea);

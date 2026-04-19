@@ -60,7 +60,12 @@ private:
     void setupCombo (juce::ComboBox& box, juce::Label& label, const juce::String& text);
     void setupPassiveKnob (juce::Slider& knob, juce::Label& label, const juce::String& text);
     void populateFactoryPresets();
+    void refreshUserPresetFiles();
     void applyFactoryPreset (int presetIndex);
+    void applyUserPreset (int presetIndex);
+    void launchPresetLoadChooser();
+    void launchPresetSaveChooser();
+    void resetPresetSelection();
 
     void paintBackground (juce::Graphics& g);
     void paintPanel (juce::Graphics& g, juce::Rectangle<int> bounds, const juce::String& title);
@@ -81,6 +86,8 @@ private:
     juce::Image centerBrandImage;
     juce::Image beeImage;
     bool isApplyingFactoryPreset = false;
+    juce::Array<juce::File> userPresetFiles;
+    std::unique_ptr<juce::FileChooser> presetFileChooser;
 
     juce::ComboBox presetCombo, catCombo;
     juce::Label presetTitleLabel, modeTitleLabel;
