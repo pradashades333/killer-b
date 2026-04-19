@@ -1,5 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
+#include <cmath>
 
 // =============================================================================
 // KBColours — Phase 5 "Gold Edition" palette
@@ -223,14 +224,64 @@ public:
         constexpr float kGlowBase = 0.12f;
         constexpr float kGlowHover = 0.19f;
 
-        static const juce::Image knobImage = []()
+        auto loadBinaryImage = [] (const char* resourceName)
         {
             int dataSize = 0;
-            if (auto* data = BinaryData::getNamedResource ("knob_2_png", dataSize))
+            if (auto* data = BinaryData::getNamedResource (resourceName, dataSize))
                 return juce::ImageFileFormat::loadFrom (data, (size_t) dataSize);
 
             return juce::Image();
-        }();
+        };
+
+        static const juce::Image goldenKnobImage = loadBinaryImage ("KNOB_GOLDEN_png");
+        static const juce::Image goldShadowImage = loadBinaryImage ("SHADOW_GOLD_png");
+        static const juce::Image redKnobImage = loadBinaryImage ("RED_KNOB_png");
+        static const juce::Image gainFilmstripImage = loadBinaryImage ("final77_png");
+        const bool useRedKnob = slider.getProperties().getWithDefault ("kbUseRedKnob", false);
+        const bool useGainFilmstrip = slider.getProperties().getWithDefault ("kbUseGainFilmstrip", false);
+
+        if (useGainFilmstrip)
+        {
+            if (gainFilmstripImage.isValid())
+            {
+                const float imageSize = radius * 2.0f;
+                const int drawX = (int) std::round (cx - radius);
+                const int drawY = (int) std::round (cy - radius);
+                const int drawSize = (int) std::round (imageSize);
+                constexpr int filmstripFrames = 128;
+                const int frameSize = gainFilmstripImage.getWidth();
+                const int availableFrames = gainFilmstripImage.getHeight() / juce::jmax (1, frameSize);
+                const int maxFrame = juce::jmin (filmstripFrames, availableFrames) - 1;
+                const int frameIndex = juce::jlimit (0, maxFrame,
+                                                     (int) std::round (sliderPosProportional * (float) maxFrame));
+
+                g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
+                g.drawImage (gainFilmstripImage, drawX, drawY, drawSize, drawSize,
+                             0, frameIndex * frameSize, frameSize, frameSize);
+            }
+
+            return;
+        }
+
+        if (useRedKnob)
+        {
+            if (redKnobImage.isValid())
+            {
+                const float imageSize = radius * 2.0f;
+                const int drawX = (int) std::round (cx - radius);
+                const int drawY = (int) std::round (cy - radius);
+                const int drawSize = (int) std::round (imageSize);
+
+                g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
+                g.saveState();
+                g.addTransform (juce::AffineTransform::rotation (angle, cx, cy));
+                g.drawImage (redKnobImage, drawX, drawY, drawSize, drawSize,
+                             0, 0, redKnobImage.getWidth(), redKnobImage.getHeight());
+                g.restoreState();
+            }
+
+            return;
+        }
 
         // ── 0. Active outer glow ────────────────────────────────────────────
         if (glowEnabled && isActive)
@@ -244,6 +295,41 @@ public:
         }
 
         // ── 1. Drop shadow ──────────────────────────────────────────────────
+        if (goldShadowImage.isValid()
+            && ((useGainFilmstrip && gainFilmstripImage.isValid())
+                || (! useGainFilmstrip && goldenKnobImage.isValid())))
+        {
+            const float imageSize = radius * 2.0f;
+            const int drawX = (int) std::round (cx - radius);
+            const int drawY = (int) std::round (cy - radius);
+            const int drawSize = (int) std::round (imageSize);
+
+            g.setImageResamplingQuality (juce::Graphics::highResamplingQuality);
+            g.drawImage (goldShadowImage, drawX, drawY, drawSize, drawSize,
+                         0, 0, goldShadowImage.getWidth(), goldShadowImage.getHeight());
+
+            if (useGainFilmstrip && gainFilmstripImage.isValid())
+            {
+                constexpr int filmstripFrames = 128;
+                const int frameSize = gainFilmstripImage.getWidth();
+                const int availableFrames = gainFilmstripImage.getHeight() / juce::jmax (1, frameSize);
+                const int maxFrame = juce::jmin (filmstripFrames, availableFrames) - 1;
+                const int frameIndex = juce::jlimit (0, maxFrame,
+                                                     (int) std::round (sliderPosProportional * (float) maxFrame));
+
+                g.drawImage (gainFilmstripImage, drawX, drawY, drawSize, drawSize,
+                             0, frameIndex * frameSize, frameSize, frameSize);
+                return;
+            }
+
+            g.saveState();
+            g.addTransform (juce::AffineTransform::rotation (angle, cx, cy));
+            g.drawImage (goldenKnobImage, drawX, drawY, drawSize, drawSize,
+                         0, 0, goldenKnobImage.getWidth(), goldenKnobImage.getHeight());
+            g.restoreState();
+            return;
+        }
+
         for (int i = 5; i >= 1; --i)
         {
             const float s = radius + (float) i * 1.8f;
@@ -298,20 +384,6 @@ public:
         }
 
         // ── 4. Outer rim — dark bronze radial gradient ──────────────────────
-        if (knobImage.isValid())
-        {
-            const float imageSize = radius * 2.0f;
-            const float drawX = cx - radius;
-            const float drawY = cy - radius;
-            constexpr float imagePointerAngle = juce::MathConstants<float>::pi * 1.5f;
-
-            g.saveState();
-            g.addTransform (juce::AffineTransform::rotation (angle - imagePointerAngle, cx, cy));
-            g.drawImage (knobImage, juce::Rectangle<float> (drawX, drawY, imageSize, imageSize));
-            g.restoreState();
-            return;
-        }
-
         {
             juce::ColourGradient rimGrad (
                 KBColours::goldRim.brighter (0.55f),
