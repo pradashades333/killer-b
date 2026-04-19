@@ -59,6 +59,8 @@ private:
     void setupVertSlider (juce::Slider& slider, juce::Label& label, const juce::String& text);
     void setupCombo (juce::ComboBox& box, juce::Label& label, const juce::String& text);
     void setupPassiveKnob (juce::Slider& knob, juce::Label& label, const juce::String& text);
+    void populateFactoryPresets();
+    void applyFactoryPreset (int presetIndex);
 
     void paintBackground (juce::Graphics& g);
     void paintPanel (juce::Graphics& g, juce::Rectangle<int> bounds, const juce::String& title);
@@ -78,6 +80,7 @@ private:
     juce::Image topLeftLogoImage;
     juce::Image centerBrandImage;
     juce::Image beeImage;
+    bool isApplyingFactoryPreset = false;
 
     juce::ComboBox presetCombo, catCombo;
     juce::Label presetTitleLabel, modeTitleLabel;

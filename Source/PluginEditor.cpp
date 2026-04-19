@@ -12,6 +12,258 @@ namespace FXMeta
 
 namespace
 {
+    struct PresetParamValue
+    {
+        const char* id;
+        float value;
+    };
+
+    struct ComboPresetState
+    {
+        int modeId;
+        int filterTypeId;
+        int filterSlopeId;
+        int voicesId;
+        int reverbPresetId;
+        int lfoRoutingId;
+        int lfoTypeId;
+    };
+
+    struct UiKnobPresetState
+    {
+        float fxDetail[4];
+        float cutoff;
+        float compMix;
+        float lfoRate;
+        float lfoDepth;
+    };
+
+    struct FactoryPreset
+    {
+        const char* name;
+        PresetParamValue params[25];
+        ComboPresetState combos;
+        UiKnobPresetState uiKnobs;
+    };
+
+    constexpr PresetParamValue makeParam (const char* id, float value) noexcept
+    {
+        return { id, value };
+    }
+
+    static const std::array<FactoryPreset, 15> factoryPresets
+    {{
+        { "Bass - Dark Moog",
+          { makeParam ("osc1type", 2.0f), makeParam ("osc2type", 1.0f), makeParam ("oscmix", 0.78f),
+            makeParam ("attack", 0.005f), makeParam ("decay", 0.18f), makeParam ("sustain", 0.68f), makeParam ("release", 0.20f),
+            makeParam ("glide", 0.06f), makeParam ("drive", 2.6f),
+            makeParam ("CHORUS_AMOUNT", 0.14f), makeParam ("CHORUS_MIX", 0.08f),
+            makeParam ("DELAY_AMOUNT", 0.18f), makeParam ("DELAY_MIX", 0.00f),
+            makeParam ("PHASER_AMOUNT", 0.10f), makeParam ("PHASER_MIX", 0.00f),
+            makeParam ("REVERB_AMOUNT", 0.18f), makeParam ("REVERB_MIX", 0.05f),
+            makeParam ("LOW_GAIN", 5.0f), makeParam ("MID_GAIN", -3.0f), makeParam ("HIGH_GAIN", -7.0f),
+            makeParam ("MASTER_GAIN", -5.0f),
+            makeParam ("COMP_THRESHOLD", -18.0f), makeParam ("COMP_RATIO", 4.0f), makeParam ("COMP_ATTACK", 18.0f), makeParam ("COMP_RELEASE", 140.0f) },
+          { 2, 2, 2, 3, 2, 1, 1 },
+          { { 0.15f, 0.05f, 0.10f, 0.18f }, 0.22f, 0.28f, 0.08f, 0.04f } },
+
+        { "Bass - Sub Pressure",
+          { makeParam ("osc1type", 0.0f), makeParam ("osc2type", 2.0f), makeParam ("oscmix", 0.30f),
+            makeParam ("attack", 0.009f), makeParam ("decay", 0.24f), makeParam ("sustain", 0.78f), makeParam ("release", 0.30f),
+            makeParam ("glide", 0.02f), makeParam ("drive", 1.6f),
+            makeParam ("CHORUS_AMOUNT", 0.08f), makeParam ("CHORUS_MIX", 0.00f),
+            makeParam ("DELAY_AMOUNT", 0.20f), makeParam ("DELAY_MIX", 0.00f),
+            makeParam ("PHASER_AMOUNT", 0.06f), makeParam ("PHASER_MIX", 0.00f),
+            makeParam ("REVERB_AMOUNT", 0.16f), makeParam ("REVERB_MIX", 0.03f),
+            makeParam ("LOW_GAIN", 7.0f), makeParam ("MID_GAIN", -5.0f), makeParam ("HIGH_GAIN", -9.0f),
+            makeParam ("MASTER_GAIN", -4.0f),
+            makeParam ("COMP_THRESHOLD", -20.0f), makeParam ("COMP_RATIO", 5.5f), makeParam ("COMP_ATTACK", 14.0f), makeParam ("COMP_RELEASE", 180.0f) },
+          { 2, 2, 2, 2, 1, 1, 1 },
+          { { 0.08f, 0.00f, 0.00f, 0.12f }, 0.16f, 0.35f, 0.05f, 0.02f } },
+
+        { "Bass - Rubber Growl",
+          { makeParam ("osc1type", 1.0f), makeParam ("osc2type", 2.0f), makeParam ("oscmix", 0.62f),
+            makeParam ("attack", 0.012f), makeParam ("decay", 0.20f), makeParam ("sustain", 0.60f), makeParam ("release", 0.24f),
+            makeParam ("glide", 0.11f), makeParam ("drive", 4.2f),
+            makeParam ("CHORUS_AMOUNT", 0.18f), makeParam ("CHORUS_MIX", 0.10f),
+            makeParam ("DELAY_AMOUNT", 0.12f), makeParam ("DELAY_MIX", 0.00f),
+            makeParam ("PHASER_AMOUNT", 0.22f), makeParam ("PHASER_MIX", 0.08f),
+            makeParam ("REVERB_AMOUNT", 0.14f), makeParam ("REVERB_MIX", 0.02f),
+            makeParam ("LOW_GAIN", 4.5f), makeParam ("MID_GAIN", 2.0f), makeParam ("HIGH_GAIN", -6.0f),
+            makeParam ("MASTER_GAIN", -7.0f),
+            makeParam ("COMP_THRESHOLD", -24.0f), makeParam ("COMP_RATIO", 7.0f), makeParam ("COMP_ATTACK", 8.0f), makeParam ("COMP_RELEASE", 120.0f) },
+          { 3, 2, 2, 3, 1, 3, 2 },
+          { { 0.18f, 0.00f, 0.20f, 0.08f }, 0.28f, 0.40f, 0.24f, 0.22f } },
+
+        { "Lead - Hard Neon",
+          { makeParam ("osc1type", 2.0f), makeParam ("osc2type", 2.0f), makeParam ("oscmix", 0.52f),
+            makeParam ("attack", 0.004f), makeParam ("decay", 0.14f), makeParam ("sustain", 0.82f), makeParam ("release", 0.18f),
+            makeParam ("glide", 0.16f), makeParam ("drive", 3.8f),
+            makeParam ("CHORUS_AMOUNT", 0.24f), makeParam ("CHORUS_MIX", 0.11f),
+            makeParam ("DELAY_AMOUNT", 0.31f), makeParam ("DELAY_MIX", 0.20f),
+            makeParam ("PHASER_AMOUNT", 0.14f), makeParam ("PHASER_MIX", 0.04f),
+            makeParam ("REVERB_AMOUNT", 0.28f), makeParam ("REVERB_MIX", 0.12f),
+            makeParam ("LOW_GAIN", -3.0f), makeParam ("MID_GAIN", 4.5f), makeParam ("HIGH_GAIN", 5.0f),
+            makeParam ("MASTER_GAIN", -6.0f),
+            makeParam ("COMP_THRESHOLD", -16.0f), makeParam ("COMP_RATIO", 3.5f), makeParam ("COMP_ATTACK", 9.0f), makeParam ("COMP_RELEASE", 110.0f) },
+          { 3, 3, 1, 2, 2, 2, 3 },
+          { { 0.22f, 0.42f, 0.10f, 0.26f }, 0.72f, 0.18f, 0.36f, 0.20f } },
+
+        { "Lead - Silk Solo",
+          { makeParam ("osc1type", 0.0f), makeParam ("osc2type", 2.0f), makeParam ("oscmix", 0.44f),
+            makeParam ("attack", 0.010f), makeParam ("decay", 0.22f), makeParam ("sustain", 0.74f), makeParam ("release", 0.32f),
+            makeParam ("glide", 0.12f), makeParam ("drive", 1.9f),
+            makeParam ("CHORUS_AMOUNT", 0.20f), makeParam ("CHORUS_MIX", 0.17f),
+            makeParam ("DELAY_AMOUNT", 0.26f), makeParam ("DELAY_MIX", 0.16f),
+            makeParam ("PHASER_AMOUNT", 0.12f), makeParam ("PHASER_MIX", 0.02f),
+            makeParam ("REVERB_AMOUNT", 0.36f), makeParam ("REVERB_MIX", 0.18f),
+            makeParam ("LOW_GAIN", -2.0f), makeParam ("MID_GAIN", 3.0f), makeParam ("HIGH_GAIN", 3.5f),
+            makeParam ("MASTER_GAIN", -4.0f),
+            makeParam ("COMP_THRESHOLD", -14.0f), makeParam ("COMP_RATIO", 2.8f), makeParam ("COMP_ATTACK", 20.0f), makeParam ("COMP_RELEASE", 150.0f) },
+          { 2, 2, 1, 2, 2, 2, 1 },
+          { { 0.18f, 0.30f, 0.06f, 0.34f }, 0.56f, 0.14f, 0.28f, 0.16f } },
+
+        { "Lead - Razor Glide",
+          { makeParam ("osc1type", 1.0f), makeParam ("osc2type", 2.0f), makeParam ("oscmix", 0.70f),
+            makeParam ("attack", 0.003f), makeParam ("decay", 0.10f), makeParam ("sustain", 0.76f), makeParam ("release", 0.16f),
+            makeParam ("glide", 0.28f), makeParam ("drive", 5.0f),
+            makeParam ("CHORUS_AMOUNT", 0.10f), makeParam ("CHORUS_MIX", 0.05f),
+            makeParam ("DELAY_AMOUNT", 0.22f), makeParam ("DELAY_MIX", 0.11f),
+            makeParam ("PHASER_AMOUNT", 0.18f), makeParam ("PHASER_MIX", 0.09f),
+            makeParam ("REVERB_AMOUNT", 0.20f), makeParam ("REVERB_MIX", 0.08f),
+            makeParam ("LOW_GAIN", -4.0f), makeParam ("MID_GAIN", 5.5f), makeParam ("HIGH_GAIN", 6.0f),
+            makeParam ("MASTER_GAIN", -8.0f),
+            makeParam ("COMP_THRESHOLD", -22.0f), makeParam ("COMP_RATIO", 6.0f), makeParam ("COMP_ATTACK", 4.0f), makeParam ("COMP_RELEASE", 90.0f) },
+          { 3, 3, 2, 3, 1, 2, 3 },
+          { { 0.06f, 0.20f, 0.18f, 0.10f }, 0.80f, 0.22f, 0.42f, 0.26f } },
+
+        { "Pluck - Velvet Bell",
+          { makeParam ("osc1type", 0.0f), makeParam ("osc2type", 2.0f), makeParam ("oscmix", 0.36f),
+            makeParam ("attack", 0.003f), makeParam ("decay", 0.26f), makeParam ("sustain", 0.18f), makeParam ("release", 0.20f),
+            makeParam ("glide", 0.00f), makeParam ("drive", 1.3f),
+            makeParam ("CHORUS_AMOUNT", 0.16f), makeParam ("CHORUS_MIX", 0.10f),
+            makeParam ("DELAY_AMOUNT", 0.34f), makeParam ("DELAY_MIX", 0.18f),
+            makeParam ("PHASER_AMOUNT", 0.07f), makeParam ("PHASER_MIX", 0.00f),
+            makeParam ("REVERB_AMOUNT", 0.42f), makeParam ("REVERB_MIX", 0.22f),
+            makeParam ("LOW_GAIN", -3.0f), makeParam ("MID_GAIN", 1.5f), makeParam ("HIGH_GAIN", 4.0f),
+            makeParam ("MASTER_GAIN", -3.0f),
+            makeParam ("COMP_THRESHOLD", -18.0f), makeParam ("COMP_RATIO", 3.0f), makeParam ("COMP_ATTACK", 12.0f), makeParam ("COMP_RELEASE", 140.0f) },
+          { 1, 2, 1, 1, 3, 1, 1 },
+          { { 0.14f, 0.26f, 0.04f, 0.38f }, 0.48f, 0.12f, 0.10f, 0.06f } },
+
+        { "Pluck - Glass Wire",
+          { makeParam ("osc1type", 1.0f), makeParam ("osc2type", 0.0f), makeParam ("oscmix", 0.58f),
+            makeParam ("attack", 0.002f), makeParam ("decay", 0.18f), makeParam ("sustain", 0.10f), makeParam ("release", 0.14f),
+            makeParam ("glide", 0.00f), makeParam ("drive", 1.8f),
+            makeParam ("CHORUS_AMOUNT", 0.12f), makeParam ("CHORUS_MIX", 0.04f),
+            makeParam ("DELAY_AMOUNT", 0.29f), makeParam ("DELAY_MIX", 0.12f),
+            makeParam ("PHASER_AMOUNT", 0.22f), makeParam ("PHASER_MIX", 0.05f),
+            makeParam ("REVERB_AMOUNT", 0.34f), makeParam ("REVERB_MIX", 0.16f),
+            makeParam ("LOW_GAIN", -4.0f), makeParam ("MID_GAIN", 0.5f), makeParam ("HIGH_GAIN", 5.0f),
+            makeParam ("MASTER_GAIN", -5.0f),
+            makeParam ("COMP_THRESHOLD", -20.0f), makeParam ("COMP_RATIO", 4.5f), makeParam ("COMP_ATTACK", 6.0f), makeParam ("COMP_RELEASE", 110.0f) },
+          { 1, 3, 2, 1, 3, 2, 2 },
+          { { 0.08f, 0.18f, 0.18f, 0.30f }, 0.74f, 0.16f, 0.20f, 0.14f } },
+
+        { "Pluck - Resin Pop",
+          { makeParam ("osc1type", 2.0f), makeParam ("osc2type", 1.0f), makeParam ("oscmix", 0.48f),
+            makeParam ("attack", 0.001f), makeParam ("decay", 0.15f), makeParam ("sustain", 0.08f), makeParam ("release", 0.11f),
+            makeParam ("glide", 0.01f), makeParam ("drive", 3.0f),
+            makeParam ("CHORUS_AMOUNT", 0.10f), makeParam ("CHORUS_MIX", 0.00f),
+            makeParam ("DELAY_AMOUNT", 0.24f), makeParam ("DELAY_MIX", 0.08f),
+            makeParam ("PHASER_AMOUNT", 0.11f), makeParam ("PHASER_MIX", 0.03f),
+            makeParam ("REVERB_AMOUNT", 0.22f), makeParam ("REVERB_MIX", 0.09f),
+            makeParam ("LOW_GAIN", -2.0f), makeParam ("MID_GAIN", 2.5f), makeParam ("HIGH_GAIN", 3.0f),
+            makeParam ("MASTER_GAIN", -6.0f),
+            makeParam ("COMP_THRESHOLD", -24.0f), makeParam ("COMP_RATIO", 6.0f), makeParam ("COMP_ATTACK", 3.0f), makeParam ("COMP_RELEASE", 90.0f) },
+          { 1, 2, 2, 2, 2, 3, 3 },
+          { { 0.10f, 0.10f, 0.10f, 0.18f }, 0.34f, 0.18f, 0.26f, 0.20f } },
+
+        { "Synth - Chrome Motion",
+          { makeParam ("osc1type", 2.0f), makeParam ("osc2type", 1.0f), makeParam ("oscmix", 0.56f),
+            makeParam ("attack", 0.020f), makeParam ("decay", 0.35f), makeParam ("sustain", 0.62f), makeParam ("release", 0.48f),
+            makeParam ("glide", 0.10f), makeParam ("drive", 2.4f),
+            makeParam ("CHORUS_AMOUNT", 0.25f), makeParam ("CHORUS_MIX", 0.18f),
+            makeParam ("DELAY_AMOUNT", 0.38f), makeParam ("DELAY_MIX", 0.16f),
+            makeParam ("PHASER_AMOUNT", 0.20f), makeParam ("PHASER_MIX", 0.12f),
+            makeParam ("REVERB_AMOUNT", 0.36f), makeParam ("REVERB_MIX", 0.16f),
+            makeParam ("LOW_GAIN", 0.0f), makeParam ("MID_GAIN", 2.5f), makeParam ("HIGH_GAIN", 2.0f),
+            makeParam ("MASTER_GAIN", -5.0f),
+            makeParam ("COMP_THRESHOLD", -17.0f), makeParam ("COMP_RATIO", 3.8f), makeParam ("COMP_ATTACK", 15.0f), makeParam ("COMP_RELEASE", 170.0f) },
+          { 1, 3, 1, 1, 2, 3, 2 },
+          { { 0.20f, 0.32f, 0.22f, 0.34f }, 0.68f, 0.22f, 0.32f, 0.24f } },
+
+        { "Synth - Arcade Drift",
+          { makeParam ("osc1type", 1.0f), makeParam ("osc2type", 1.0f), makeParam ("oscmix", 0.50f),
+            makeParam ("attack", 0.008f), makeParam ("decay", 0.22f), makeParam ("sustain", 0.54f), makeParam ("release", 0.36f),
+            makeParam ("glide", 0.06f), makeParam ("drive", 2.9f),
+            makeParam ("CHORUS_AMOUNT", 0.18f), makeParam ("CHORUS_MIX", 0.12f),
+            makeParam ("DELAY_AMOUNT", 0.30f), makeParam ("DELAY_MIX", 0.10f),
+            makeParam ("PHASER_AMOUNT", 0.28f), makeParam ("PHASER_MIX", 0.14f),
+            makeParam ("REVERB_AMOUNT", 0.24f), makeParam ("REVERB_MIX", 0.10f),
+            makeParam ("LOW_GAIN", 1.0f), makeParam ("MID_GAIN", 3.5f), makeParam ("HIGH_GAIN", 1.5f),
+            makeParam ("MASTER_GAIN", -6.0f),
+            makeParam ("COMP_THRESHOLD", -19.0f), makeParam ("COMP_RATIO", 4.8f), makeParam ("COMP_ATTACK", 11.0f), makeParam ("COMP_RELEASE", 130.0f) },
+          { 2, 3, 2, 2, 1, 2, 3 },
+          { { 0.16f, 0.24f, 0.28f, 0.20f }, 0.62f, 0.20f, 0.40f, 0.28f } },
+
+        { "Synth - Analog Runner",
+          { makeParam ("osc1type", 2.0f), makeParam ("osc2type", 0.0f), makeParam ("oscmix", 0.68f),
+            makeParam ("attack", 0.014f), makeParam ("decay", 0.28f), makeParam ("sustain", 0.58f), makeParam ("release", 0.42f),
+            makeParam ("glide", 0.18f), makeParam ("drive", 3.5f),
+            makeParam ("CHORUS_AMOUNT", 0.10f), makeParam ("CHORUS_MIX", 0.04f),
+            makeParam ("DELAY_AMOUNT", 0.22f), makeParam ("DELAY_MIX", 0.08f),
+            makeParam ("PHASER_AMOUNT", 0.09f), makeParam ("PHASER_MIX", 0.03f),
+            makeParam ("REVERB_AMOUNT", 0.18f), makeParam ("REVERB_MIX", 0.05f),
+            makeParam ("LOW_GAIN", 2.5f), makeParam ("MID_GAIN", 1.5f), makeParam ("HIGH_GAIN", -1.0f),
+            makeParam ("MASTER_GAIN", -7.0f),
+            makeParam ("COMP_THRESHOLD", -21.0f), makeParam ("COMP_RATIO", 5.0f), makeParam ("COMP_ATTACK", 7.0f), makeParam ("COMP_RELEASE", 115.0f) },
+          { 3, 2, 1, 3, 1, 2, 1 },
+          { { 0.10f, 0.15f, 0.06f, 0.12f }, 0.44f, 0.24f, 0.22f, 0.18f } },
+
+        { "Pad - Honey Cloud",
+          { makeParam ("osc1type", 0.0f), makeParam ("osc2type", 2.0f), makeParam ("oscmix", 0.42f),
+            makeParam ("attack", 0.65f), makeParam ("decay", 0.90f), makeParam ("sustain", 0.78f), makeParam ("release", 1.60f),
+            makeParam ("glide", 0.00f), makeParam ("drive", 1.1f),
+            makeParam ("CHORUS_AMOUNT", 0.26f), makeParam ("CHORUS_MIX", 0.24f),
+            makeParam ("DELAY_AMOUNT", 0.42f), makeParam ("DELAY_MIX", 0.10f),
+            makeParam ("PHASER_AMOUNT", 0.10f), makeParam ("PHASER_MIX", 0.03f),
+            makeParam ("REVERB_AMOUNT", 0.58f), makeParam ("REVERB_MIX", 0.30f),
+            makeParam ("LOW_GAIN", 1.0f), makeParam ("MID_GAIN", -1.0f), makeParam ("HIGH_GAIN", 2.5f),
+            makeParam ("MASTER_GAIN", -3.0f),
+            makeParam ("COMP_THRESHOLD", -12.0f), makeParam ("COMP_RATIO", 2.2f), makeParam ("COMP_ATTACK", 30.0f), makeParam ("COMP_RELEASE", 260.0f) },
+          { 1, 2, 1, 1, 2, 3, 1 },
+          { { 0.24f, 0.20f, 0.10f, 0.52f }, 0.40f, 0.10f, 0.18f, 0.20f } },
+
+        { "Pad - Cinema Bloom",
+          { makeParam ("osc1type", 2.0f), makeParam ("osc2type", 0.0f), makeParam ("oscmix", 0.50f),
+            makeParam ("attack", 0.85f), makeParam ("decay", 1.20f), makeParam ("sustain", 0.72f), makeParam ("release", 2.40f),
+            makeParam ("glide", 0.00f), makeParam ("drive", 1.0f),
+            makeParam ("CHORUS_AMOUNT", 0.30f), makeParam ("CHORUS_MIX", 0.20f),
+            makeParam ("DELAY_AMOUNT", 0.46f), makeParam ("DELAY_MIX", 0.14f),
+            makeParam ("PHASER_AMOUNT", 0.14f), makeParam ("PHASER_MIX", 0.05f),
+            makeParam ("REVERB_AMOUNT", 0.70f), makeParam ("REVERB_MIX", 0.34f),
+            makeParam ("LOW_GAIN", 0.5f), makeParam ("MID_GAIN", 0.0f), makeParam ("HIGH_GAIN", 3.0f),
+            makeParam ("MASTER_GAIN", -4.0f),
+            makeParam ("COMP_THRESHOLD", -15.0f), makeParam ("COMP_RATIO", 2.6f), makeParam ("COMP_ATTACK", 40.0f), makeParam ("COMP_RELEASE", 320.0f) },
+          { 1, 3, 2, 1, 1, 2, 2 },
+          { { 0.28f, 0.26f, 0.12f, 0.60f }, 0.64f, 0.12f, 0.22f, 0.24f } },
+
+        { "Pad - Vintage Wash",
+          { makeParam ("osc1type", 1.0f), makeParam ("osc2type", 2.0f), makeParam ("oscmix", 0.58f),
+            makeParam ("attack", 0.42f), makeParam ("decay", 0.70f), makeParam ("sustain", 0.80f), makeParam ("release", 1.90f),
+            makeParam ("glide", 0.04f), makeParam ("drive", 1.4f),
+            makeParam ("CHORUS_AMOUNT", 0.22f), makeParam ("CHORUS_MIX", 0.18f),
+            makeParam ("DELAY_AMOUNT", 0.35f), makeParam ("DELAY_MIX", 0.12f),
+            makeParam ("PHASER_AMOUNT", 0.18f), makeParam ("PHASER_MIX", 0.08f),
+            makeParam ("REVERB_AMOUNT", 0.52f), makeParam ("REVERB_MIX", 0.26f),
+            makeParam ("LOW_GAIN", 2.0f), makeParam ("MID_GAIN", -2.0f), makeParam ("HIGH_GAIN", 1.0f),
+            makeParam ("MASTER_GAIN", -5.0f),
+            makeParam ("COMP_THRESHOLD", -16.0f), makeParam ("COMP_RATIO", 3.2f), makeParam ("COMP_ATTACK", 26.0f), makeParam ("COMP_RELEASE", 220.0f) },
+          { 1, 2, 1, 2, 3, 3, 1 },
+          { { 0.20f, 0.22f, 0.16f, 0.48f }, 0.36f, 0.16f, 0.14f, 0.12f } }
+    }};
+
     int countWhiteKeysInRange (int lowNote, int highNote)
     {
         int count = 0;
@@ -127,10 +379,7 @@ KillaBEditor::KillaBEditor (KillerBProcessor& p)
     beeImage = loadBinaryImageIfPresent ("GOLD_BEE_png");
 
     setupCombo (presetCombo, presetTitleLabel, "PRESETS");
-    presetCombo.addItem ("Bass - Dark Moog", 1);
-    presetCombo.addItem ("Init Patch", 2);
-    presetCombo.addItem ("Hard Lead", 3);
-    presetCombo.setSelectedId (1, juce::dontSendNotification);
+    populateFactoryPresets();
 
     setupCombo (catCombo, modeTitleLabel, "SYNTHMODE");
     catCombo.addItem ("Poly", 1);
@@ -295,6 +544,85 @@ void KillaBEditor::setupPassiveKnob (juce::Slider& knob, juce::Label& label, con
     knob.setRange (0.0, 1.0, 0.001);
     knob.setValue (0.5, juce::dontSendNotification);
     setupKnob (knob, label, text, "gold");
+}
+
+void KillaBEditor::populateFactoryPresets()
+{
+    presetCombo.clear (juce::dontSendNotification);
+    presetCombo.setTextWhenNothingSelected ("Choose preset");
+    presetCombo.setJustificationType (juce::Justification::centredLeft);
+
+    auto displayCategory = [] (juce::String category)
+    {
+        category = category.trim().toLowerCase();
+
+        if (category == "bass")  return juce::String ("BASSES");
+        if (category == "lead")  return juce::String ("LEADS");
+        if (category == "pluck") return juce::String ("PLUCKS");
+        if (category == "synth") return juce::String ("SYNTHS");
+        if (category == "pad")   return juce::String ("PADS");
+
+        return category.toUpperCase();
+    };
+
+    juce::String currentCategory;
+    for (size_t i = 0; i < factoryPresets.size(); ++i)
+    {
+        const juce::String presetName (factoryPresets[i].name);
+        const auto category = presetName.upToFirstOccurrenceOf (" - ", false, false);
+
+        if (category != currentCategory)
+        {
+            if (currentCategory.isNotEmpty())
+                presetCombo.addSeparator();
+
+            presetCombo.addSectionHeading (displayCategory (category));
+            currentCategory = category;
+        }
+
+        presetCombo.addItem (presetName.fromFirstOccurrenceOf (" - ", false, false), (int) i + 1);
+    }
+
+    presetCombo.onChange = [this]
+    {
+        if (isApplyingFactoryPreset)
+            return;
+
+        const int presetIndex = presetCombo.getSelectedId() - 1;
+        if (juce::isPositiveAndBelow (presetIndex, (int) factoryPresets.size()))
+            applyFactoryPreset (presetIndex);
+    };
+}
+
+void KillaBEditor::applyFactoryPreset (int presetIndex)
+{
+    if (! juce::isPositiveAndBelow (presetIndex, (int) factoryPresets.size()))
+        return;
+
+    const auto& preset = factoryPresets[(size_t) presetIndex];
+    juce::ScopedValueSetter<bool> applyingPreset (isApplyingFactoryPreset, true);
+
+    for (const auto& param : preset.params)
+        if (auto* ranged = processorRef.apvts.getParameter (param.id))
+            ranged->setValueNotifyingHost (ranged->convertTo0to1 (param.value));
+
+    catCombo.setSelectedId (preset.combos.modeId, juce::sendNotificationSync);
+    filterTypeBox.setSelectedId (preset.combos.filterTypeId, juce::sendNotificationSync);
+    filterSlopeBox.setSelectedId (preset.combos.filterSlopeId, juce::sendNotificationSync);
+    voicesBox.setSelectedId (preset.combos.voicesId, juce::sendNotificationSync);
+    reverbPresetBox.setSelectedId (preset.combos.reverbPresetId, juce::sendNotificationSync);
+    lfoRoutingBox.setSelectedId (preset.combos.lfoRoutingId, juce::sendNotificationSync);
+    lfoTypeBox.setSelectedId (preset.combos.lfoTypeId, juce::sendNotificationSync);
+
+    for (int i = 0; i < 4; ++i)
+        fxDetailKnobs[i].setValue (preset.uiKnobs.fxDetail[i], juce::sendNotificationSync);
+
+    cutoffKnob.setValue (preset.uiKnobs.cutoff, juce::sendNotificationSync);
+    compMixKnob.setValue (preset.uiKnobs.compMix, juce::sendNotificationSync);
+    lfoRateKnob.setValue (preset.uiKnobs.lfoRate, juce::sendNotificationSync);
+    lfoDepthKnob.setValue (preset.uiKnobs.lfoDepth, juce::sendNotificationSync);
+
+    presetCombo.setSelectedId (presetIndex + 1, juce::dontSendNotification);
 }
 
 void KillaBEditor::timerCallback()
@@ -547,7 +875,6 @@ void KillaBEditor::paint (juce::Graphics& g)
 
     g.setFont (juce::Font (juce::FontOptions ("Segoe UI", 11.0f, juce::Font::bold)).withExtraKerningFactor (0.18f));
     g.setColour (KBColours::textGold);
-    g.drawText ("VOICES", centerArea.getX() + 155, centerArea.getBottom() - 78, 120, 14, juce::Justification::centred);
     g.drawText ("COMPRESSOR", compArea.getX() + 128, compArea.getY() + 104, 160, 14, juce::Justification::centred);
 }
 
@@ -651,15 +978,23 @@ void KillaBEditor::resized()
 
     const int meterY = eqArea.getY() + 36;
     const int meterH = 220;
-    meterBarLow.setBounds (eqArea.getX() + 18, meterY, 16, meterH);
-    meterBarMid.setBounds (eqArea.getX() + 145, meterY, 16, meterH);
-    meterBarHigh.setBounds (eqArea.getX() + 272, meterY, 16, meterH);
-    eqLowKnob.setBounds (eqArea.getX() + 48, eqArea.getY() + 86, 92, 92);
-    eqLowLabel.setBounds (eqArea.getX() + 58, eqArea.getY() + 176, 70, 14);
-    eqMidKnob.setBounds (eqArea.getX() + 175, eqArea.getY() + 86, 92, 92);
-    eqMidLabel.setBounds (eqArea.getX() + 185, eqArea.getY() + 176, 70, 14);
-    eqHighKnob.setBounds (eqArea.getX() + 302, eqArea.getY() + 86, 92, 92);
-    eqHighLabel.setBounds (eqArea.getX() + 312, eqArea.getY() + 176, 70, 14);
+    const int eqKnobSize = 124;
+    const int eqKnobY = eqArea.getY() + 78;
+    const int eqLabelY = eqKnobY + eqKnobSize - 4;
+    const int eqColW = eqArea.getWidth() / 3;
+    const int eqLowX = eqArea.getX() + eqColW * 0 + (eqColW - eqKnobSize) / 2 + 10;
+    const int eqMidX = eqArea.getX() + eqColW * 1 + (eqColW - eqKnobSize) / 2 + 10;
+    const int eqHighX = eqArea.getX() + eqColW * 2 + (eqColW - eqKnobSize) / 2 + 10;
+
+    meterBarLow.setBounds (eqLowX - 30, meterY, 16, meterH);
+    meterBarMid.setBounds (eqMidX - 30, meterY, 16, meterH);
+    meterBarHigh.setBounds (eqHighX - 30, meterY, 16, meterH);
+    eqLowKnob.setBounds (eqLowX, eqKnobY, eqKnobSize, eqKnobSize);
+    eqLowLabel.setBounds (eqLowX + 20, eqLabelY, 84, 14);
+    eqMidKnob.setBounds (eqMidX, eqKnobY, eqKnobSize, eqKnobSize);
+    eqMidLabel.setBounds (eqMidX + 20, eqLabelY, 84, 14);
+    eqHighKnob.setBounds (eqHighX, eqKnobY, eqKnobSize, eqKnobSize);
+    eqHighLabel.setBounds (eqHighX + 20, eqLabelY, 84, 14);
 
     auto adsrBody = adsrArea.reduced (10, 42);
     const int sliderW = adsrBody.getWidth() / 4;
