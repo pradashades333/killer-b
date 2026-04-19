@@ -27,6 +27,7 @@ juce_add_binary_data(KillerBAssets
         "KILLA B.png"
         "GOLD BEE.png"
         "TURNE ME UP.png"
+        "knob 2.png"
 )
 
 juce_add_plugin(KillerBSynth

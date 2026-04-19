@@ -217,8 +217,20 @@ public:
         const bool glowEnabled = slider.getProperties().getWithDefault ("kbGlowEnabled", false);
         const float hoverScale = isHover ? 1.04f : 1.0f;
         const float radius = baseRadius * hoverScale;
+        const float rimRadius = radius;
+        const float faceRadius = radius - 5.0f;
+        const float capRadius = faceRadius * 0.28f;
         constexpr float kGlowBase = 0.12f;
         constexpr float kGlowHover = 0.19f;
+
+        static const juce::Image knobImage = []()
+        {
+            int dataSize = 0;
+            if (auto* data = BinaryData::getNamedResource ("knob_2_png", dataSize))
+                return juce::ImageFileFormat::loadFrom (data, (size_t) dataSize);
+
+            return juce::Image();
+        }();
 
         // ── 0. Active outer glow ────────────────────────────────────────────
         if (glowEnabled && isActive)
@@ -252,29 +264,80 @@ public:
         // ── 3. Value arc — glow layers then solid ───────────────────────────
         if (sliderPosProportional > 0.002f)
         {
-            juce::Path val;
-            val.addCentredArc (cx, cy, radius - 1.5f, radius - 1.5f,
-                               0.0f, rotaryStartAngle, angle, true);
-            g.setColour (accentCol.withAlpha (0.20f));
-            g.strokePath (val, juce::PathStrokeType (11.0f,
+            const float ringRadius = rimRadius - 2.4f;
+
+            juce::Path outerTrack;
+            outerTrack.addCentredArc (cx, cy, ringRadius, ringRadius,
+                                      0.0f, rotaryStartAngle, rotaryEndAngle, true);
+            g.setColour (KBColours::knobBody.brighter (0.10f).withAlpha (0.95f));
+            g.strokePath (outerTrack, juce::PathStrokeType (3.0f,
                          juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-            g.setColour (accentCol.withAlpha (0.40f));
-            g.strokePath (val, juce::PathStrokeType (6.0f,
+
+            juce::Path valueArc;
+            valueArc.addCentredArc (cx, cy, ringRadius, ringRadius,
+                                    0.0f, rotaryStartAngle, angle, true);
+            g.setColour (accentCol.withAlpha (0.22f));
+            g.strokePath (valueArc, juce::PathStrokeType (11.0f,
                          juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
-            g.setColour (accentCol.brighter (0.15f));
-            g.strokePath (val, juce::PathStrokeType (2.5f,
+            g.setColour (accentCol.withAlpha (0.90f));
+            g.strokePath (valueArc, juce::PathStrokeType (5.0f,
                          juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+            g.setColour (KBColours::champagne);
+            g.strokePath (valueArc, juce::PathStrokeType (1.8f,
+                         juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
+
+            const float sA = std::sin (angle);
+            const float cA = std::cos (angle);
+            const float mx = cx + sA * ringRadius;
+            const float my = cy - cA * ringRadius;
+
+            g.setColour (accentCol.withAlpha (0.25f));
+            g.fillEllipse (mx - 5.0f, my - 5.0f, 10.0f, 10.0f);
+            g.setColour (KBColours::champagne.withAlpha (0.95f));
+            g.fillEllipse (mx - 2.2f, my - 2.2f, 4.4f, 4.4f);
         }
 
         // ── 4. Outer rim — dark bronze radial gradient ──────────────────────
+        if (knobImage.isValid())
+        {
+            const float imageSize = radius * 2.0f;
+            const float drawX = cx - radius;
+            const float drawY = cy - radius;
+            constexpr float imagePointerAngle = juce::MathConstants<float>::pi * 1.5f;
+
+            g.saveState();
+            g.addTransform (juce::AffineTransform::rotation (angle - imagePointerAngle, cx, cy));
+            g.drawImage (knobImage, juce::Rectangle<float> (drawX, drawY, imageSize, imageSize));
+            g.restoreState();
+            return;
+        }
+
         {
             juce::ColourGradient rimGrad (
                 KBColours::goldRim.brighter (0.55f),
-                cx - radius * 0.55f, cy - radius * 0.55f,
+                cx - rimRadius * 0.55f, cy - rimRadius * 0.55f,
                 KBColours::goldRim.darker  (0.70f),
-                cx + radius * 0.55f, cy + radius * 0.55f, true);
+                cx + rimRadius * 0.55f, cy + rimRadius * 0.55f, true);
             g.setGradientFill (rimGrad);
-            g.fillEllipse (cx - radius, cy - radius, radius * 2.0f, radius * 2.0f);
+            g.fillEllipse (cx - rimRadius, cy - rimRadius, rimRadius * 2.0f, rimRadius * 2.0f);
+        }
+
+        {
+            constexpr int grooveCount = 22;
+            const float grooveOuter = rimRadius - 0.8f;
+            const float grooveInner = rimRadius - juce::jmax (3.6f, rimRadius * 0.14f);
+
+            for (int i = 0; i < grooveCount; ++i)
+            {
+                const float grooveAngle = juce::MathConstants<float>::twoPi * (float) i / (float) grooveCount;
+                const float s = std::sin (grooveAngle);
+                const float c = std::cos (grooveAngle);
+                const float light = juce::jmap (c - s, -1.4f, 1.4f, 0.18f, 0.72f);
+
+                g.setColour (juce::Colour::fromFloatRGBA (1.0f, 0.96f, 0.84f, light * 0.16f));
+                g.drawLine (cx + s * grooveOuter, cy - c * grooveOuter,
+                            cx + s * grooveInner, cy - c * grooveInner, 1.0f);
+            }
         }
 
         // ── 5. Tick marks — 11 evenly spaced around arc ─────────────────────
@@ -305,41 +368,95 @@ public:
 
         // ── 6. Knob face — burnished gold radial gradient ───────────────────
         {
-            const float bR = radius - 4.5f;
             juce::ColourGradient face (
                 KBColours::goldLight.withAlpha (0.95f),
-                cx - bR * 0.38f, cy - bR * 0.48f,
+                cx - faceRadius * 0.38f, cy - faceRadius * 0.52f,
                 KBColours::goldDark,
-                cx + bR * 0.55f, cy + bR * 0.55f, true);
-            face.addColour (0.45, KBColours::gold);
+                cx + faceRadius * 0.52f, cy + faceRadius * 0.58f, true);
+            face.addColour (0.32, KBColours::champagne.withAlpha (0.95f));
+            face.addColour (0.56, KBColours::gold);
+            face.addColour (0.82, KBColours::bronze.withAlpha (0.9f));
             g.setGradientFill (face);
-            g.fillEllipse (cx - bR, cy - bR, bR * 2.0f, bR * 2.0f);
+            g.fillEllipse (cx - faceRadius, cy - faceRadius, faceRadius * 2.0f, faceRadius * 2.0f);
+        }
+
+        {
+            juce::Path faceClip;
+            faceClip.addEllipse (cx - faceRadius, cy - faceRadius, faceRadius * 2.0f, faceRadius * 2.0f);
+            g.saveState();
+            g.reduceClipRegion (faceClip);
+
+            juce::ColourGradient sweep (juce::Colours::white.withAlpha (0.0f),
+                                        cx - faceRadius, cy - faceRadius * 0.15f,
+                                        juce::Colours::white.withAlpha (0.28f),
+                                        cx + faceRadius * 0.35f, cy - faceRadius * 0.75f, false);
+            sweep.addColour (0.55, juce::Colours::white.withAlpha (0.10f));
+            sweep.addColour (1.0, juce::Colours::white.withAlpha (0.0f));
+            g.setGradientFill (sweep);
+            g.fillRect ((int) (cx - faceRadius), (int) (cy - faceRadius),
+                        (int) (faceRadius * 2.0f), (int) (faceRadius * 1.3f));
+            g.restoreState();
         }
 
         // ── 7. Inner groove ring — thin dark line ───────────────────────────
         {
-            const float gR = radius - 4.0f;
+            const float gR = faceRadius + 0.6f;
             g.setColour (KBColours::goldDark.darker (0.7f));
             g.drawEllipse (cx - gR, cy - gR, gR * 2.0f, gR * 2.0f, 1.2f);
         }
 
         // ── 8. Centre engraving — small depressed circle ────────────────────
         {
-            const float dR = radius * 0.26f;
-            juce::ColourGradient det (
-                KBColours::goldDark.darker (0.5f), cx - dR, cy - dR,
-                KBColours::gold.withAlpha (0.25f), cx + dR, cy + dR, true);
-            g.setGradientFill (det);
-            g.fillEllipse (cx - dR, cy - dR, dR * 2.0f, dR * 2.0f);
+            constexpr int markerCount = 3;
+            const float markerOrbit = faceRadius * 0.72f;
+            const float markerRadius = juce::jmax (1.5f, faceRadius * 0.055f);
+
+            for (int i = 0; i < markerCount; ++i)
+            {
+                const float markerAngle = juce::MathConstants<float>::twoPi * ((float) i / (float) markerCount)
+                                          - juce::MathConstants<float>::halfPi;
+                const float mx = cx + std::cos (markerAngle) * markerOrbit;
+                const float my = cy + std::sin (markerAngle) * markerOrbit;
+
+                juce::ColourGradient markerGrad (KBColours::goldLight.withAlpha (0.85f),
+                                                 mx - markerRadius, my - markerRadius,
+                                                 KBColours::goldDark.darker (0.7f),
+                                                 mx + markerRadius, my + markerRadius, true);
+                g.setGradientFill (markerGrad);
+                g.fillEllipse (mx - markerRadius, my - markerRadius,
+                               markerRadius * 2.0f, markerRadius * 2.0f);
+                g.setColour (juce::Colours::black.withAlpha (0.35f));
+                g.drawLine (mx - markerRadius * 0.55f, my,
+                            mx + markerRadius * 0.55f, my, 0.8f);
+            }
+        }
+
+        {
+            juce::ColourGradient cap (
+                KBColours::champagne.withAlpha (0.96f), cx - capRadius * 0.45f, cy - capRadius * 0.7f,
+                KBColours::goldDark.darker (0.35f), cx + capRadius * 0.65f, cy + capRadius * 0.80f, true);
+            cap.addColour (0.35, KBColours::goldLight.withAlpha (0.95f));
+            cap.addColour (0.65, KBColours::gold);
+            g.setGradientFill (cap);
+            g.fillEllipse (cx - capRadius, cy - capRadius, capRadius * 2.0f, capRadius * 2.0f);
+
+            g.setColour (juce::Colours::black.withAlpha (0.22f));
+            g.drawEllipse (cx - capRadius, cy - capRadius, capRadius * 2.0f, capRadius * 2.0f, 1.0f);
+
+            const float innerCap = capRadius * 0.56f;
+            juce::ColourGradient innerCapGrad (
+                KBColours::goldDark.darker (0.5f), cx - innerCap, cy - innerCap,
+                KBColours::gold.withAlpha (0.25f), cx + innerCap, cy + innerCap, true);
+            g.setGradientFill (innerCapGrad);
+            g.fillEllipse (cx - innerCap, cy - innerCap, innerCap * 2.0f, innerCap * 2.0f);
             g.setColour (KBColours::goldRim.darker (0.4f));
-            g.drawEllipse (cx - dR, cy - dR, dR * 2.0f, dR * 2.0f, 0.8f);
+            g.drawEllipse (cx - innerCap, cy - innerCap, innerCap * 2.0f, innerCap * 2.0f, 0.8f);
         }
 
         // ── 9. Indicator line — tapered, from center to near rim ────────────
         {
-            const float lineStart = radius * 0.24f;
-            const float lineEnd   = radius - 5.5f;
-            // JUCE rotary convention: x = cx + sin(angle)*r, y = cy - cos(angle)*r
+            const float lineStart = capRadius * 0.9f;
+            const float lineEnd = faceRadius - 3.5f;
             const float sA = std::sin (angle);
             const float cA = std::cos (angle);
 
@@ -348,24 +465,28 @@ public:
             const float ix2 = cx + sA * lineEnd;
             const float iy2 = cy - cA * lineEnd;
 
-            // Wide glow
-            g.setColour (accentCol.withAlpha (0.40f));
-            g.drawLine (ix1, iy1, ix2, iy2, 4.5f);
-            // Bright core
+            g.setColour (juce::Colours::black.withAlpha (0.30f));
+            g.drawLine (ix1, iy1, ix2, iy2, 5.6f);
+
+            g.setColour (accentCol.withAlpha (0.30f));
+            g.drawLine (ix1, iy1, ix2, iy2, 4.0f);
+
             g.setColour (KBColours::champagne);
-            g.drawLine (ix1, iy1, ix2, iy2, 1.6f);
-            // Tip dot
-            g.setColour (KBColours::champagne.brighter (0.4f));
-            g.fillEllipse (ix2 - 2.8f, iy2 - 2.8f, 5.6f, 5.6f);
+            g.drawLine (ix1, iy1, ix2, iy2, 1.8f);
+
+            const float tipRadius = 3.0f;
+            juce::ColourGradient tip (KBColours::champagne.brighter (0.5f), ix2 - 1.2f, iy2 - 1.5f,
+                                      accentCol.darker (0.25f), ix2 + tipRadius, iy2 + tipRadius, true);
+            g.setGradientFill (tip);
+            g.fillEllipse (ix2 - tipRadius, iy2 - tipRadius, tipRadius * 2.0f, tipRadius * 2.0f);
         }
 
         // ── 10. Glass highlight — upper-left soft ellipse ────────────────────
         {
-            const float bR = radius - 4.5f;
-            const float hlW = bR * 0.50f;
-            const float hlH = bR * 0.30f;
-            const float hlX = cx - bR * 0.34f;
-            const float hlY = cy - bR * 0.60f;
+            const float hlW = faceRadius * 0.52f;
+            const float hlH = faceRadius * 0.28f;
+            const float hlX = cx - faceRadius * 0.38f;
+            const float hlY = cy - faceRadius * 0.66f;
             juce::ColourGradient hl (
                 juce::Colours::white.withAlpha (0.28f), hlX,       hlY,
                 juce::Colours::white.withAlpha (0.0f),  hlX + hlW, hlY + hlH, false);
@@ -375,12 +496,11 @@ public:
 
         // ── 11. Inner shadow vignette for depth ──────────────────────────────
         {
-            const float bR = radius - 4.5f;
             juce::ColourGradient innerShadow (juce::Colours::transparentBlack, cx, cy,
                                               juce::Colours::black.withAlpha (0.22f),
-                                              cx + bR, cy + bR, true);
+                                              cx + faceRadius, cy + faceRadius, true);
             g.setGradientFill (innerShadow);
-            g.fillEllipse (cx - bR, cy - bR, bR * 2.0f, bR * 2.0f);
+            g.fillEllipse (cx - faceRadius, cy - faceRadius, faceRadius * 2.0f, faceRadius * 2.0f);
         }
     }
 
