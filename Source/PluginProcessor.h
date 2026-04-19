@@ -67,6 +67,10 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
+    bool savePresetToFile (const juce::File& file, const juce::String& presetName);
+    bool loadPresetFromFile (const juce::File& file);
+    static juce::File getUserPresetDirectory();
+
     // -----------------------------------------------------------------------
     // Public — editor connects sliders / combo boxes and reads meter levels.
     // -----------------------------------------------------------------------
@@ -87,6 +91,7 @@ public:
 
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+    bool loadPresetXml (const juce::XmlElement& xml);
 
     static void applyDistortion    (juce::AudioBuffer<float>& buffer, float drive) noexcept;
     void        updateFXParameters () noexcept;
