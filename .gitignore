@@ -1,5 +1,8 @@
 build/
 build_ci/
+build_ci_maccheck/
+build_installer/
+Killer-B-Synth-macOS-Installer/
 .claude/
 /Extras/
 /JUCE/extras/*

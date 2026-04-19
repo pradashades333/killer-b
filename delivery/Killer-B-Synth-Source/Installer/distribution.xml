@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="2">
+  <title>Killer B Synth</title>
+  <welcome file="welcome.html" mime-type="text/html"/>
+  <license file="license.html" mime-type="text/html"/>
+  <options customize="never" require-scripts="false" hostArchitectures="arm64,x86_64"/>
+  <choices-outline>
+    <line choice="vst3"/>
+    <line choice="au"/>
+  </choices-outline>
+  <choice id="vst3" title="VST3 Plugin"
+          description="Installs Killer B Synth VST3 to /Library/Audio/Plug-Ins/VST3">
+    <pkg-ref id="com.killerb.killerbsynth.vst3"/>
+  </choice>
+  <choice id="au" title="Audio Unit Plugin"
+          description="Installs Killer B Synth AU to /Library/Audio/Plug-Ins/Components">
+    <pkg-ref id="com.killerb.killerbsynth.au"/>
+  </choice>
+  <pkg-ref id="com.killerb.killerbsynth.vst3" version="1.0.0">KillerBSynth-VST3.pkg</pkg-ref>
+  <pkg-ref id="com.killerb.killerbsynth.au" version="1.0.0">KillerBSynth-AU.pkg</pkg-ref>
+</installer-gui-script>
