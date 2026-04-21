@@ -33,8 +33,8 @@ namespace KBColours
     const juce::Colour textGold  { 0xffc8a850 };   // Bright gold text
 
     // ── Knob materials ───────────────────────────────────────────────────────
-    const juce::Colour knobBody  { 0xff181410 };   // Very dark bronze
-    const juce::Colour knobRim   { 0xff504028 };   // Bronze rim
+    const juce::Colour knobBody  { 0xff161210 };   // Very dark bronze
+    const juce::Colour knobRim   { 0xff524430 };   // Bronze rim
 
     // ── Meter — gold spectrum (amber → bright champagne) ─────────────────────
     const juce::Colour meterGreen  { 0xff907828 };   // Dim amber
