@@ -127,7 +127,7 @@ public:
 
         // 5. Edge vignette — darker corners
         {
-            const float r = (float) juce::jmax (w, h) * 0.75f;
+            const float r = (float) juce::jmax (w, h) * 0.78f;
             juce::ColourGradient vig (juce::Colours::transparentBlack,
                                       (float) w * 0.5f, (float) h * 0.5f,
                                       juce::Colours::black.withAlpha (0.62f),
