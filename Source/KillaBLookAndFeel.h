@@ -177,7 +177,7 @@ public:
                                          0.0f, 61.0f,
                                          juce::Colours::transparentBlack,
                                          (float) w, 61.0f, false);
-            gLine.addColour (0.05, KBColours::gold.withAlpha (0.75f));
+            gLine.addColour (0.05, KBColours::gold.withAlpha (0.78f));
             gLine.addColour (0.50, KBColours::goldLight);
             gLine.addColour (0.95, KBColours::gold.withAlpha (0.75f));
             g.setGradientFill (gLine);
