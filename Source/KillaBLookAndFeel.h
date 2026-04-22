@@ -149,7 +149,7 @@ public:
 
         // 5c. Very light noise grain overlay (premium matte surface).
         {
-            g.setColour (juce::Colours::white.withAlpha (0.055f));
+            g.setColour (juce::Colours::white.withAlpha (0.058f));
             for (int y = 0; y < h; y += 3)
             {
                 const int x = (y * 37) % juce::jmax (1, w);
