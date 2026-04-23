@@ -186,7 +186,7 @@ public:
 
         // 8. Bottom gold glow strip
         {
-            juce::ColourGradient glow (KBColours::gold.withAlpha (0.12f),
+            juce::ColourGradient glow (KBColours::gold.withAlpha (0.14f),
                                         (float) w * 0.5f, (float) h,
                                         juce::Colours::transparentBlack,
                                         (float) w * 0.5f, (float)(h - 34), false);
