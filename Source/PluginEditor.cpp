@@ -864,7 +864,7 @@ KillaBEditor::KillaBEditor (KillerBProcessor& p)
     keyboard.setAvailableRange (24, 108);
     addAndMakeVisible (keyboard);
 
-    startTimerHz (33);
+    startTimerHz (30);
 }
 
 KillaBEditor::~KillaBEditor()
