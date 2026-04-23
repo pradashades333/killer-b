@@ -342,7 +342,7 @@ public:
             juce::Path track;
             track.addCentredArc (cx, cy, radius - 1.5f, radius - 1.5f,
                                  0.0f, rotaryStartAngle, rotaryEndAngle, true);
-            g.setColour (KBColours::knobBody.brighter (0.08f));
+            g.setColour (KBColours::knobBody.brighter (0.09f));
             g.strokePath (track, juce::PathStrokeType (3.5f,
                          juce::PathStrokeType::curved, juce::PathStrokeType::rounded));
         }
