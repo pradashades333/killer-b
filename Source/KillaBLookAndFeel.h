@@ -20,7 +20,7 @@ namespace KBColours
     const juce::Colour goldLight { 0xffead892 };   // Highlight gold
     const juce::Colour goldDark  { 0xff725618 };   // Deep gold shadow
     const juce::Colour goldRim   { 0xff504028 };   // Knob rim bronze
-    const juce::Colour champagne { 0xfff0dc90 };   // Champagne highlight
+    const juce::Colour champagne { 0xfff2de94 };   // Champagne highlight
     const juce::Colour bronze    { 0xffb87a30 };   // Pure bronze
 
     // ── Distortion accent only ────────────────────────────────────────────────
