@@ -130,7 +130,7 @@ public:
             const float r = (float) juce::jmax (w, h) * 0.78f;
             juce::ColourGradient vig (juce::Colours::transparentBlack,
                                       (float) w * 0.5f, (float) h * 0.5f,
-                                      juce::Colours::black.withAlpha (0.62f),
+                                      juce::Colours::black.withAlpha (0.60f),
                                       (float) w * 0.5f + r, (float) h * 0.5f, true);
             g.setGradientFill (vig);
             g.fillRect (0, 0, w, h);
