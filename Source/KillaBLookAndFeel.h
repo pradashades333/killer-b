@@ -165,7 +165,7 @@ public:
 
         // 6. Header bar — subtle gradient charcoal
         {
-            juce::ColourGradient hdr (KBColours::panel.brighter (0.12f), 0.0f,  0.0f,
+            juce::ColourGradient hdr (KBColours::panel.brighter (0.11f), 0.0f,  0.0f,
                                        KBColours::panel,                  0.0f, 60.0f, false);
             g.setGradientFill (hdr);
             g.fillRect (0, 0, w, 60);
