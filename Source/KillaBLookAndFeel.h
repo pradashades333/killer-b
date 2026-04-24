@@ -430,7 +430,7 @@ public:
                 const bool major = (ti == 0 || ti == N - 1 || ti == N / 2);
                 const float inner = major ? (radius - radius * 0.22f) : tickInner;
 
-                g.setColour (major ? KBColours::gold.withAlpha (0.75f)
+                g.setColour (major ? KBColours::gold.withAlpha (0.78f)
                                    : KBColours::goldRim.brighter (0.35f).withAlpha (0.45f));
                 g.drawLine (cx + sA * tickOuter, cy - cA * tickOuter,
                             cx + sA * inner,     cy - cA * inner,
