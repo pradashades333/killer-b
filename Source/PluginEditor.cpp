@@ -1166,7 +1166,7 @@ void KillaBEditor::timerCallback()
     meterBarMid.repaint();
     meterBarHigh.repaint();
 
-    wavePhase += 0.06f;
+    wavePhase += 0.055f;
     orbitAngle += 0.010f;
 
     const float driveRaw = processorRef.apvts.getRawParameterValue ("drive")->load();
