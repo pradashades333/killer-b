@@ -1191,7 +1191,7 @@ void KillaBEditor::paintPanel (juce::Graphics& g, juce::Rectangle<int> bounds, c
 {
     g.setColour (juce::Colours::transparentBlack);
     g.fillRect (bounds);
-    g.setColour (KBColours::gold.withAlpha (0.65f));
+    g.setColour (KBColours::gold.withAlpha (0.62f));
     g.drawRect (bounds, 1);
     g.setFont (juce::Font (juce::FontOptions ("Segoe UI", 10.5f, juce::Font::bold)).withExtraKerningFactor (0.30f));
     g.setColour (KBColours::textGold);
