@@ -110,7 +110,7 @@ public:
         }
 
         // 3. Subtle crosshatch grid
-        g.setColour (juce::Colours::white.withAlpha (0.013f));
+        g.setColour (juce::Colours::white.withAlpha (0.012f));
         for (int x = 0; x < w; x += 20) g.drawVerticalLine   (x, 0.0f, (float) h);
         for (int y = 0; y < h; y += 20) g.drawHorizontalLine (y, 0.0f, (float) w);
 
