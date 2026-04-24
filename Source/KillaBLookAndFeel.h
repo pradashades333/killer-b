@@ -221,7 +221,7 @@ public:
         const float rimRadius = radius;
         const float faceRadius = radius - 5.0f;
         const float capRadius = faceRadius * 0.28f;
-        constexpr float kGlowBase = 0.12f;
+        constexpr float kGlowBase = 0.13f;
         constexpr float kGlowHover = 0.19f;
 
         auto loadBinaryImage = [] (const char* resourceName)
