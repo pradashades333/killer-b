@@ -70,6 +70,10 @@ public:
     bool savePresetToFile (const juce::File& file, const juce::String& presetName);
     bool loadPresetFromFile (const juce::File& file);
     static juce::File getUserPresetDirectory();
+    static juce::File getBundledDrumDirectory();
+
+    void setActiveDrumKit (int drumKitId);
+    int getActiveDrumKit() const noexcept { return activeDrumKitId; }
 
     // -----------------------------------------------------------------------
     // Public — editor connects sliders / combo boxes and reads meter levels.
@@ -89,24 +93,46 @@ public:
     std::atomic<float> levelMid  { 0.0f };
     std::atomic<float> levelHigh { 0.0f };
 
+public:
+    enum class DrumSampleCategory
+    {
+        bass808 = 0,
+        kicks,
+        snares,
+        claps,
+        hats,
+        percs,
+        voxFx,
+        count
+    };
+
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     bool loadPresetXml (const juce::XmlElement& xml);
 
     static void applyDistortion    (juce::AudioBuffer<float>& buffer, float drive) noexcept;
     void        updateFXParameters () noexcept;
+    void        updateFilterParameters() noexcept;
     void        updateEQParameters () noexcept;
     void        updateCompressorParameters() noexcept;
 
     // Compute per-band RMS from the final mixed buffer and store into atomics.
     // No allocations — uses processSample() on three persistent mono filters.
     void updateMeters (const juce::AudioBuffer<float>& buffer) noexcept;
+    void refreshDrumKitFileCache();
+    void loadDrumKitIntoSampler (int drumKitId);
 
     // -----------------------------------------------------------------------
     // Synth
     // -----------------------------------------------------------------------
     juce::Synthesiser synth;
+    juce::Synthesiser drumSynth;
+    juce::AudioFormatManager formatManager;
     static constexpr int NUM_VOICES = 8;
+    static constexpr int NUM_DRUM_VOICES = 32;
+    static constexpr int NUM_DRUM_KITS = 7;
+    int activeDrumKitId = -1;
+    std::array<juce::Array<juce::File>, static_cast<size_t> (DrumSampleCategory::count)> drumKitFiles;
 
     // -----------------------------------------------------------------------
     // FX Chain
@@ -126,6 +152,7 @@ private:
     // -----------------------------------------------------------------------
     using StereoIIR = juce::dsp::ProcessorDuplicator<juce::dsp::IIR::Filter<float>,
                                                        juce::dsp::IIR::Coefficients<float>>;
+    StereoIIR filterStage1, filterStage2;
     StereoIIR eqLow, eqMid, eqHigh;
 
     // -----------------------------------------------------------------------

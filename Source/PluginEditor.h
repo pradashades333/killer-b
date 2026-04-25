@@ -49,10 +49,12 @@ public:
     explicit KillaBEditor (KillerBProcessor&);
     ~KillaBEditor() override;
 
+    void setScaleFactor (float newScale) override;
     void paint (juce::Graphics&) override;
     void resized() override;
 
 private:
+    float calculateDisplayFitScale() const;
     void timerCallback() override;
 
     void setupKnob (juce::Slider& knob, juce::Label& label, const juce::String& text, const juce::String& colourTag);
@@ -86,6 +88,7 @@ private:
     juce::Image centerBrandImage;
     juce::Image beeImage;
     bool isApplyingFactoryPreset = false;
+    float displayFitScale = 1.0f;
     juce::Array<juce::File> userPresetFiles;
     std::unique_ptr<juce::FileChooser> presetFileChooser;
 
@@ -142,12 +145,13 @@ private:
     using CA = juce::AudioProcessorValueTreeState::ComboBoxAttachment;
 
     std::unique_ptr<CA> osc1TypeAttach, osc2TypeAttach;
+    std::unique_ptr<CA> filterTypeAttach, filterSlopeAttach;
     std::unique_ptr<SA> oscMixAttach, masterGainAttach, driveAttach;
     std::unique_ptr<SA> compThreshAttach, compRatioAttach, compAttackAttach, compReleaseAttach;
     std::array<std::unique_ptr<SA>, 4> fxAmtAttaches, fxMixAttaches;
     std::unique_ptr<SA> eqLowAttach, eqMidAttach, eqHighAttach;
     std::unique_ptr<SA> attackAttach, decayAttach, sustainAttach, releaseAttach;
-    std::unique_ptr<SA> glideAttach;
+    std::unique_ptr<SA> glideAttach, cutoffAttach;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (KillaBEditor)
 };
