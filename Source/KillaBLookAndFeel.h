@@ -179,7 +179,7 @@ public:
                                          (float) w, 61.0f, false);
             gLine.addColour (0.05, KBColours::gold.withAlpha (0.78f));
             gLine.addColour (0.50, KBColours::goldLight);
-            gLine.addColour (0.95, KBColours::gold.withAlpha (0.75f));
+            gLine.addColour (0.95, KBColours::gold.withAlpha (0.76f));
             g.setGradientFill (gLine);
             g.fillRect (0, 60, w, 2);
         }
