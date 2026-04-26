@@ -117,7 +117,7 @@ public:
         // 4. Centre radial highlight (very subtle warmth)
         {
             const float r = (float) juce::jmax (w, h) * 0.65f;
-            juce::ColourGradient hl (juce::Colours::white.withAlpha (0.022f),
+            juce::ColourGradient hl (juce::Colours::white.withAlpha (0.020f),
                                      (float) w * 0.5f, (float) h * 0.34f,
                                      juce::Colours::transparentBlack,
                                      (float) w * 0.5f + r, (float) h * 0.34f, true);
