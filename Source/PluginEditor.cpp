@@ -1146,7 +1146,7 @@ void KillaBEditor::resetPresetSelection()
 
 void KillaBEditor::timerCallback()
 {
-    constexpr float decayPerTick = 0.87f;
+    constexpr float decayPerTick = 0.88f;
     auto toNorm = [] (float rmsLinear)
     {
         if (rmsLinear <= 0.0f)
