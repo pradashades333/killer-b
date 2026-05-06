@@ -55,6 +55,8 @@ public:
 
 private:
     float calculateDisplayFitScale() const;
+    void refreshDisplayScaleIfNeeded();
+    void applyEffectiveScaleFactor();
     void timerCallback() override;
 
     void setupKnob (juce::Slider& knob, juce::Label& label, const juce::String& text, const juce::String& colourTag);
@@ -88,7 +90,9 @@ private:
     juce::Image centerBrandImage;
     juce::Image beeImage;
     bool isApplyingFactoryPreset = false;
+    float hostScaleFactor = 1.0f;
     float displayFitScale = 1.0f;
+    float appliedScaleFactor = 0.0f;
     juce::Array<juce::File> userPresetFiles;
     std::unique_ptr<juce::FileChooser> presetFileChooser;
 
