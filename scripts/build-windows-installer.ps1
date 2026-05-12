@@ -10,6 +10,11 @@ $resolvedVst3 = [System.IO.Path]::GetFullPath((Join-Path $repoRoot $Vst3Path))
 $resolvedOutput = [System.IO.Path]::GetFullPath((Join-Path $repoRoot $OutputExe))
 $nsisScript = Join-Path $repoRoot "Installer\windows-installer.nsi"
 
+if (-not (Test-Path $nsisScript)) {
+    $nsisScript = Get-ChildItem -Path (Join-Path $repoRoot "Installer") -Recurse -Filter "windows-installer.nsi" -File |
+        Select-Object -First 1 -ExpandProperty FullName
+}
+
 if (-not (Test-Path $resolvedVst3)) {
     throw "VST3 bundle not found: $resolvedVst3"
 }
