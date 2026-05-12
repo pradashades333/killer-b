@@ -114,7 +114,11 @@ KillerBProcessor::KillerBProcessor()
             apvts.getRawParameterValue ("decay"),
             apvts.getRawParameterValue ("sustain"),
             apvts.getRawParameterValue ("release"),
-            apvts.getRawParameterValue ("glide")
+            apvts.getRawParameterValue ("glide"),
+            apvts.getRawParameterValue ("lfoRate"),
+            apvts.getRawParameterValue ("lfoDepth"),
+            apvts.getRawParameterValue ("lfoRouting"),
+            apvts.getRawParameterValue ("lfoType")
         );
         synth.addVoice (voice);
     }
@@ -250,6 +254,16 @@ KillerBProcessor::createParameterLayout()
         "glide", "Glide",
         juce::NormalisableRange<float> (0.0f, 2.0f, 0.001f, 0.5f), 0.0f));
     layout.add (std::make_unique<juce::AudioParameterFloat> (
+        "lfoRate", "LFO Rate",
+        juce::NormalisableRange<float> (0.0f, 1.0f, 0.001f), 0.15f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
+        "lfoDepth", "LFO Depth",
+        juce::NormalisableRange<float> (0.0f, 1.0f, 0.001f), 0.0f));
+    layout.add (std::make_unique<juce::AudioParameterChoice> (
+        "lfoRouting", "LFO Routing", juce::StringArray { "None", "Pitch", "Filter" }, 0));
+    layout.add (std::make_unique<juce::AudioParameterChoice> (
+        "lfoType", "LFO Type", juce::StringArray { "Sin", "Tri", "Square" }, 0));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
         "drive", "Drive",
         juce::NormalisableRange<float> (1.0f, 20.0f, 0.1f, 0.4f), 1.0f));
 
@@ -270,11 +284,17 @@ KillerBProcessor::createParameterLayout()
         "CHORUS_MIX", "Chorus Mix",
         juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f), 0.0f));
     layout.add (std::make_unique<juce::AudioParameterFloat> (
+        "chorusDetail", "Chorus Detail",
+        juce::NormalisableRange<float> (0.0f, 1.0f, 0.001f), 0.2f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
         "DELAY_AMOUNT", "Delay Time",
         juce::NormalisableRange<float> (0.0f, 1.0f, 0.001f, 0.5f), 0.375f));
     layout.add (std::make_unique<juce::AudioParameterFloat> (
         "DELAY_MIX", "Delay Mix",
         juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f), 0.0f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
+        "delayDetail", "Delay Detail",
+        juce::NormalisableRange<float> (0.0f, 1.0f, 0.001f), 0.2f));
     layout.add (std::make_unique<juce::AudioParameterFloat> (
         "PHASER_AMOUNT", "Phaser Freq",
         juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f), 0.2f));
@@ -282,11 +302,19 @@ KillerBProcessor::createParameterLayout()
         "PHASER_MIX", "Phaser Mix",
         juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f), 0.0f));
     layout.add (std::make_unique<juce::AudioParameterFloat> (
+        "phaserDetail", "Phaser Detail",
+        juce::NormalisableRange<float> (0.0f, 1.0f, 0.001f), 0.2f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
         "REVERB_AMOUNT", "Reverb Size",
         juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f), 0.5f));
     layout.add (std::make_unique<juce::AudioParameterFloat> (
         "REVERB_MIX", "Reverb Mix",
         juce::NormalisableRange<float> (0.0f, 1.0f, 0.01f), 0.0f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
+        "reverbDetail", "Reverb Detail",
+        juce::NormalisableRange<float> (0.0f, 1.0f, 0.001f), 0.25f));
+    layout.add (std::make_unique<juce::AudioParameterChoice> (
+        "reverbPreset", "Reverb Preset", juce::StringArray { "Church", "Hall", "Plate" }, 0));
 
     // -----------------------------------------------------------------------
     // 3-Band EQ — gain in dB, default 0 (unity, transparent)
@@ -325,6 +353,9 @@ KillerBProcessor::createParameterLayout()
     layout.add (std::make_unique<juce::AudioParameterFloat> (
         "COMP_RELEASE", "Comp Release",
         juce::NormalisableRange<float> (10.0f, 1000.0f, 1.0f, 0.4f), 100.0f));
+    layout.add (std::make_unique<juce::AudioParameterFloat> (
+        "compMix", "Comp Mix",
+        juce::NormalisableRange<float> (0.0f, 1.0f, 0.001f), 0.2f));
 
     return layout;
 }
@@ -368,6 +399,9 @@ void KillerBProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     // --- Compressor & Master Gain -------------------------------------------
     compressor.prepare   (stereoSpec);  compressor.reset();
     masterGainDSP.prepare (stereoSpec); masterGainDSP.reset();
+    compressorDryBuffer.setSize (juce::jmax (1, getTotalNumOutputChannels()),
+                                 juce::jmax (1, samplesPerBlock),
+                                 false, false, true);
 
     // --- Band metering filters (mono, fixed frequency, no APVTS binding) ---
     meterLow.prepare  (monoSpec);  meterLow.reset();
@@ -447,10 +481,10 @@ void KillerBProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
     // 5 — Ping-pong delay
     {
-        const float delayAmt     = apvts.getRawParameterValue ("DELAY_AMOUNT")->load();
-        const float delayMix     = apvts.getRawParameterValue ("DELAY_MIX")->load();
-        const float delaySamples = juce::jmax (1.0f, delayAmt * (float) getSampleRate());
-        constexpr float feedback = 0.45f;
+        const float delayAmt      = apvts.getRawParameterValue ("DELAY_AMOUNT")->load();
+        const float delayMix      = apvts.getRawParameterValue ("DELAY_MIX")->load();
+        const float delayFeedback = 0.15f + apvts.getRawParameterValue ("delayDetail")->load() * 0.75f;
+        const float delaySamples  = juce::jmax (1.0f, delayAmt * (float) getSampleRate());
 
         float* dataL = buffer.getWritePointer (0);
         float* dataR = buffer.getWritePointer (1);
@@ -461,8 +495,8 @@ void KillerBProcessor::processBlock (juce::AudioBuffer<float>& buffer,
             const float inR  = dataR[s];
             const float wetL = delayL.popSample (0, delaySamples, true);
             const float wetR = delayR.popSample (0, delaySamples, true);
-            delayL.pushSample (0, inL + wetR * feedback);
-            delayR.pushSample (0, inR + wetL * feedback);
+            delayL.pushSample (0, inL + wetR * delayFeedback);
+            delayR.pushSample (0, inR + wetL * delayFeedback);
             dataL[s] = inL + (wetL - inL) * delayMix;
             dataR[s] = inR + (wetR - inR) * delayMix;
         }
@@ -482,7 +516,18 @@ void KillerBProcessor::processBlock (juce::AudioBuffer<float>& buffer,
 
     // 9 — Compressor
     updateCompressorParameters();
+    compressorDryBuffer.makeCopyOf (buffer, true);
     compressor.process (context);
+
+    const float compMix = juce::jlimit (0.0f, 1.0f, apvts.getRawParameterValue ("compMix")->load());
+    if (compMix < 0.999f)
+    {
+        for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
+        {
+            buffer.applyGain (ch, 0, buffer.getNumSamples(), compMix);
+            buffer.addFrom (ch, 0, compressorDryBuffer, ch, 0, buffer.getNumSamples(), 1.0f - compMix);
+        }
+    }
 
     // 10 — Master Gain
     masterGainDSP.setGainDecibels (apvts.getRawParameterValue ("MASTER_GAIN")->load());
@@ -499,25 +544,43 @@ void KillerBProcessor::updateFXParameters() noexcept
 {
     const float chorusAmt = apvts.getRawParameterValue ("CHORUS_AMOUNT")->load();
     const float chorusMix = apvts.getRawParameterValue ("CHORUS_MIX")->load();
+    const float chorusDetail = apvts.getRawParameterValue ("chorusDetail")->load();
     chorus.setRate        (0.1f + chorusAmt * 4.9f);
-    chorus.setDepth       (0.5f);
-    chorus.setCentreDelay (7.0f);
-    chorus.setFeedback    (0.0f);
+    chorus.setDepth       (0.18f + chorusDetail * 0.8f);
+    chorus.setCentreDelay (4.0f + chorusDetail * 10.0f);
+    chorus.setFeedback    (-0.1f + chorusDetail * 0.2f);
     chorus.setMix         (chorusMix);
 
     const float phaserAmt = apvts.getRawParameterValue ("PHASER_AMOUNT")->load();
     const float phaserMix = apvts.getRawParameterValue ("PHASER_MIX")->load();
+    const float phaserDetail = apvts.getRawParameterValue ("phaserDetail")->load();
     phaser.setCentreFrequency (100.0f + phaserAmt * 7900.0f);
-    phaser.setRate            (0.5f);
-    phaser.setDepth           (0.7f);
-    phaser.setFeedback        (0.7f);
+    phaser.setRate            (0.15f + phaserAmt * 1.5f);
+    phaser.setDepth           (0.2f + phaserDetail * 0.75f);
+    phaser.setFeedback        (0.1f + phaserDetail * 0.8f);
     phaser.setMix             (phaserMix);
 
     const float reverbAmt = apvts.getRawParameterValue ("REVERB_AMOUNT")->load();
     const float reverbMix = apvts.getRawParameterValue ("REVERB_MIX")->load();
+    const float reverbDetail = apvts.getRawParameterValue ("reverbDetail")->load();
+    const int reverbPreset = static_cast<int> (apvts.getRawParameterValue ("reverbPreset")->load());
     juce::dsp::Reverb::Parameters revP;
-    revP.roomSize   = reverbAmt;
-    revP.damping    = 0.5f;
+    switch (reverbPreset)
+    {
+        case 0:
+            revP.roomSize = juce::jlimit (0.0f, 1.0f, 0.45f + reverbAmt * 0.55f);
+            revP.damping = 0.18f + reverbDetail * 0.28f;
+            break;
+        case 2:
+            revP.roomSize = juce::jlimit (0.0f, 1.0f, 0.18f + reverbAmt * 0.40f);
+            revP.damping = 0.55f + reverbDetail * 0.35f;
+            break;
+        case 1:
+        default:
+            revP.roomSize = juce::jlimit (0.0f, 1.0f, 0.30f + reverbAmt * 0.55f);
+            revP.damping = 0.35f + reverbDetail * 0.35f;
+            break;
+    }
     revP.wetLevel   = reverbMix;
     revP.dryLevel   = 1.0f - reverbMix;
     revP.width      = 1.0f;
@@ -532,8 +595,17 @@ void KillerBProcessor::updateFilterParameters() noexcept
 {
     const double sr = getSampleRate();
     const int filterType = (int) apvts.getRawParameterValue ("filterType")->load();
-    const float cutoff = juce::jlimit (40.0f, 16000.0f,
-                                      apvts.getRawParameterValue ("filterCutoff")->load());
+    float cutoff = juce::jlimit (40.0f, 16000.0f,
+                                 apvts.getRawParameterValue ("filterCutoff")->load());
+    const int lfoRouting = static_cast<int> (apvts.getRawParameterValue ("lfoRouting")->load());
+    const float lfoDepth = apvts.getRawParameterValue ("lfoDepth")->load();
+
+    if (lfoRouting == 2)
+    {
+        const float lfoValue = getLfoValue();
+        const float cutoffScale = std::pow (2.0f, lfoValue * lfoDepth * 1.25f);
+        cutoff = juce::jlimit (40.0f, 16000.0f, cutoff * cutoffScale);
+    }
 
     juce::dsp::IIR::Coefficients<float>::Ptr coefficients;
 
@@ -574,6 +646,29 @@ void KillerBProcessor::updateCompressorParameters() noexcept
     compressor.setRatio     (apvts.getRawParameterValue ("COMP_RATIO")->load());
     compressor.setAttack    (apvts.getRawParameterValue ("COMP_ATTACK")->load());
     compressor.setRelease   (apvts.getRawParameterValue ("COMP_RELEASE")->load());
+}
+
+float KillerBProcessor::getLfoValue() noexcept
+{
+    const float lfoRate = apvts.getRawParameterValue ("lfoRate")->load();
+    const int lfoType = static_cast<int> (apvts.getRawParameterValue ("lfoType")->load());
+    const double phaseIncrement = (0.05 + static_cast<double> (lfoRate) * 11.95)
+                                * static_cast<double> (getBlockSize())
+                                / juce::jmax (1.0, getSampleRate());
+    globalLfoPhase = std::fmod (globalLfoPhase + phaseIncrement, 1.0);
+
+    switch (lfoType)
+    {
+        case 1:
+            return static_cast<float> (1.0 - 4.0 * std::abs (globalLfoPhase - 0.5));
+
+        case 2:
+            return globalLfoPhase < 0.5 ? 1.0f : -1.0f;
+
+        case 0:
+        default:
+            return static_cast<float> (std::sin (globalLfoPhase * juce::MathConstants<double>::twoPi));
+    }
 }
 
 // ---------------------------------------------------------------------------

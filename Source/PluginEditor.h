@@ -70,6 +70,7 @@ private:
     void launchPresetLoadChooser();
     void launchPresetSaveChooser();
     void resetPresetSelection();
+    void stepFactoryPreset (int delta);
 
     void paintBackground (juce::Graphics& g);
     void paintPanel (juce::Graphics& g, juce::Rectangle<int> bounds, const juce::String& title);
@@ -97,6 +98,7 @@ private:
     std::unique_ptr<juce::FileChooser> presetFileChooser;
 
     juce::ComboBox presetCombo, catCombo;
+    juce::TextButton presetPrevButton { "<" }, presetNextButton { ">" };
     juce::Label presetTitleLabel, modeTitleLabel;
 
     std::array<juce::Slider, 4> fxAmtKnobs, fxMixKnobs, fxDetailKnobs;
@@ -149,13 +151,14 @@ private:
     using CA = juce::AudioProcessorValueTreeState::ComboBoxAttachment;
 
     std::unique_ptr<CA> osc1TypeAttach, osc2TypeAttach;
-    std::unique_ptr<CA> filterTypeAttach, filterSlopeAttach;
+    std::unique_ptr<CA> filterTypeAttach, filterSlopeAttach, reverbPresetAttach, lfoRoutingAttach, lfoTypeAttach;
     std::unique_ptr<SA> oscMixAttach, masterGainAttach, driveAttach;
-    std::unique_ptr<SA> compThreshAttach, compRatioAttach, compAttackAttach, compReleaseAttach;
+    std::unique_ptr<SA> compThreshAttach, compRatioAttach, compAttackAttach, compReleaseAttach, compMixAttach;
     std::array<std::unique_ptr<SA>, 4> fxAmtAttaches, fxMixAttaches;
+    std::array<std::unique_ptr<SA>, 4> fxDetailAttaches;
     std::unique_ptr<SA> eqLowAttach, eqMidAttach, eqHighAttach;
     std::unique_ptr<SA> attackAttach, decayAttach, sustainAttach, releaseAttach;
-    std::unique_ptr<SA> glideAttach, cutoffAttach;
+    std::unique_ptr<SA> glideAttach, cutoffAttach, lfoRateAttach, lfoDepthAttach;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (KillaBEditor)
 };

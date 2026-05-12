@@ -115,6 +115,7 @@ private:
     void        updateFilterParameters() noexcept;
     void        updateEQParameters () noexcept;
     void        updateCompressorParameters() noexcept;
+    float       getLfoValue() noexcept;
 
     // Compute per-band RMS from the final mixed buffer and store into atomics.
     // No allocations — uses processSample() on three persistent mono filters.
@@ -160,6 +161,7 @@ private:
     // -----------------------------------------------------------------------
     juce::dsp::Compressor<float> compressor;
     juce::dsp::Gain<float>       masterGainDSP;
+    juce::AudioBuffer<float>     compressorDryBuffer;
 
     // -----------------------------------------------------------------------
     // Band metering filters (mono, fixed coefficients set in prepareToPlay)
@@ -169,6 +171,7 @@ private:
     //   meterHigh — HPF  at 2500 Hz
     // -----------------------------------------------------------------------
     juce::dsp::IIR::Filter<float> meterLow, meterMid, meterHigh;
+    double globalLfoPhase = 0.0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (KillerBProcessor)
 };

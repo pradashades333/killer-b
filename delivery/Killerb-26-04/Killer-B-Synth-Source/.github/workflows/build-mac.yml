@@ -1,0 +1,89 @@
+name: Build macOS Plugins
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -G "Unix Makefiles" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DKILLERB_COPY_AFTER_BUILD=OFF \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET="11.0"
+
+      - name: Build VST3
+        run: cmake --build build --config Release --target KillerBSynth_VST3 -j$(sysctl -n hw.ncpu)
+
+      - name: Build AU
+        run: cmake --build build --config Release --target KillerBSynth_AU -j$(sysctl -n hw.ncpu)
+
+      - name: Ad-hoc sign VST3
+        run: |
+          VST3=$(find build -name "*.vst3" -type d | head -1)
+          [ -z "$VST3" ] && echo "ERROR: VST3 not found" && exit 1
+          echo "Signing VST3: $VST3"
+          codesign --force --deep --sign - "$VST3"
+
+      - name: Ad-hoc sign AU
+        run: |
+          AU=$(find build -name "*.component" -type d | head -1)
+          [ -z "$AU" ] && echo "ERROR: AU not found" && exit 1
+          echo "Signing AU: $AU"
+          codesign --force --deep --sign - "$AU"
+
+      - name: Build .pkg installer
+        run: |
+          set -e
+
+          VST3=$(find build -name "*.vst3" -type d | head -1)
+          AU=$(find build -name "*.component" -type d | head -1)
+          [ -z "$VST3" ] && echo "ERROR: VST3 not found" && exit 1
+          [ -z "$AU" ] && echo "ERROR: AU not found" && exit 1
+          echo "VST3: $VST3"
+          echo "AU: $AU"
+
+          mkdir -p pkg_stage/vst3/Library/Audio/Plug-Ins/VST3
+          mkdir -p pkg_stage/au/Library/Audio/Plug-Ins/Components
+          cp -R "$VST3" "pkg_stage/vst3/Library/Audio/Plug-Ins/VST3/"
+          cp -R "$AU" "pkg_stage/au/Library/Audio/Plug-Ins/Components/"
+
+          pkgbuild \
+            --root pkg_stage/vst3 \
+            --identifier com.killerb.killerbsynth.vst3 \
+            --version 1.0.0 \
+            --install-location / \
+            KillerBSynth-VST3.pkg
+
+          pkgbuild \
+            --root pkg_stage/au \
+            --identifier com.killerb.killerbsynth.au \
+            --version 1.0.0 \
+            --install-location / \
+            KillerBSynth-AU.pkg
+
+          productbuild \
+            --distribution Installer/distribution.xml \
+            --resources Installer \
+            --package-path . \
+            "Killer-B-Synth-macOS-Installer.pkg"
+
+          ls -lh Killer-B-Synth-macOS-Installer.pkg
+
+      - name: Upload macOS installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Killer-B-Synth-macOS-Installer
+          path: Killer-B-Synth-macOS-Installer.pkg
+          if-no-files-found: error
