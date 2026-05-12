@@ -49,10 +49,15 @@ jobs:
 
           VST3=$(find build -name "*.vst3" -type d | head -1)
           AU=$(find build -name "*.component" -type d | head -1)
+          INSTALLER_DIR=$(find Installer -path "*/Killer-B-Synth-Source/Installer" -type d | head -1)
+
           [ -z "$VST3" ] && echo "ERROR: VST3 not found" && exit 1
           [ -z "$AU" ] && echo "ERROR: AU not found" && exit 1
+          [ -z "$INSTALLER_DIR" ] && echo "ERROR: Installer resources not found" && exit 1
+
           echo "VST3: $VST3"
           echo "AU: $AU"
+          echo "Installer resources: $INSTALLER_DIR"
 
           mkdir -p pkg_stage/vst3/Library/Audio/Plug-Ins/VST3
           mkdir -p pkg_stage/au/Library/Audio/Plug-Ins/Components
@@ -74,8 +79,8 @@ jobs:
             KillerBSynth-AU.pkg
 
           productbuild \
-            --distribution Installer/distribution.xml \
-            --resources Installer \
+            --distribution "$INSTALLER_DIR/distribution.xml" \
+            --resources "$INSTALLER_DIR" \
             --package-path . \
             "Killer-B-Synth-macOS-Installer.pkg"
 
