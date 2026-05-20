@@ -764,9 +764,24 @@ namespace
     }
 
     constexpr int userPresetIdBase = 1000;
+    constexpr int initPresetItemId = 8999;
     constexpr int savePresetItemId = 9001;
-    constexpr int loadPresetItemId = 9002;
-    constexpr int refreshPresetsItemId = 9003;
+    constexpr int savePresetAsItemId = 9002;
+    constexpr int loadPresetItemId = 9003;
+    constexpr int refreshPresetsItemId = 9004;
+
+    static const std::array<const char*, 38> presetTrackedParameterIds
+    {{
+        "osc1type", "osc2type", "oscmix", "attack", "decay", "sustain", "release",
+        "glide", "lfoRate", "lfoDepth", "lfoRouting", "lfoType", "drive",
+        "filterType", "filterSlope", "filterCutoff",
+        "CHORUS_AMOUNT", "CHORUS_MIX", "chorusDetail",
+        "DELAY_AMOUNT", "DELAY_MIX", "delayDetail",
+        "PHASER_AMOUNT", "PHASER_MIX", "phaserDetail",
+        "REVERB_AMOUNT", "REVERB_MIX", "reverbDetail", "reverbPreset",
+        "LOW_GAIN", "MID_GAIN", "HIGH_GAIN", "MASTER_GAIN",
+        "COMP_THRESHOLD", "COMP_RATIO", "COMP_ATTACK", "COMP_RELEASE", "compMix"
+    }};
 
     juce::String makeSafePresetFileName (juce::String name)
     {
@@ -959,7 +974,12 @@ KillaBEditor::KillaBEditor (KillerBProcessor& p)
     catCombo.addItem ("Poly", 1);
     catCombo.addItem ("Mono", 2);
     catCombo.addItem ("Legato", 3);
-    catCombo.setSelectedId (1, juce::dontSendNotification);
+    catCombo.onChange = [this]
+    {
+        processorRef.setCurrentModeId (catCombo.getSelectedId());
+        if (! isApplyingFactoryPreset)
+            markCurrentPresetDirty();
+    };
 
     for (int i = 0; i < 4; ++i)
     {
@@ -1001,7 +1021,12 @@ KillaBEditor::KillaBEditor (KillerBProcessor& p)
     voicesBox.addItem ("32", 1);
     voicesBox.addItem ("16", 2);
     voicesBox.addItem ("8", 3);
-    voicesBox.setSelectedId (1, juce::dontSendNotification);
+    voicesBox.onChange = [this]
+    {
+        processorRef.setCurrentVoicesId (voicesBox.getSelectedId());
+        if (! isApplyingFactoryPreset)
+            markCurrentPresetDirty();
+    };
 
     osc1TypeBox.addItem ("Sine", 1);
     osc1TypeBox.addItem ("Square", 2);
@@ -1079,13 +1104,91 @@ KillaBEditor::KillaBEditor (KillerBProcessor& p)
     keyboard.setAvailableRange (24, 108);
     addAndMakeVisible (keyboard);
 
+    for (const auto* parameterId : presetTrackedParameterIds)
+        processorRef.apvts.addParameterListener (parameterId, this);
+
+    applyInitPreset();
+
     startTimerHz (30);
 }
 
 KillaBEditor::~KillaBEditor()
 {
+    for (const auto* parameterId : presetTrackedParameterIds)
+        processorRef.apvts.removeParameterListener (parameterId, this);
+
     stopTimer();
     setLookAndFeel (nullptr);
+}
+
+void KillaBEditor::parameterChanged (const juce::String&, float)
+{
+    parameterChangePending.store (true, std::memory_order_relaxed);
+    presetLabelRefreshPending.store (true, std::memory_order_relaxed);
+}
+
+void KillaBEditor::applyInitPreset()
+{
+    juce::ScopedValueSetter<bool> applyingPreset (isApplyingFactoryPreset, true);
+
+    for (auto* parameter : processorRef.getParameters())
+        parameter->setValueNotifyingHost (parameter->getDefaultValue());
+
+    processorRef.setActiveDrumKit (-1);
+    catCombo.setSelectedId (1, juce::sendNotificationSync);
+    voicesBox.setSelectedId (1, juce::sendNotificationSync);
+    syncEditorControlsFromProcessorState();
+    setCurrentPresetState ("Basic Preset", {});
+    clearCurrentPresetDirty();
+}
+
+void KillaBEditor::saveCurrentPreset()
+{
+    if (currentPresetFile.existsAsFile())
+    {
+        const auto targetFile = currentPresetFile.hasFileExtension (".kbpreset")
+            ? currentPresetFile
+            : currentPresetFile.withFileExtension (".kbpreset");
+        processorRef.savePresetToFile (targetFile, makeSafePresetFileName (currentPresetName));
+        populateFactoryPresets();
+        setCurrentPresetState (targetFile.getFileNameWithoutExtension(), targetFile);
+        clearCurrentPresetDirty();
+        return;
+    }
+
+    launchPresetSaveChooser (false);
+}
+
+void KillaBEditor::setCurrentPresetState (juce::String presetName, juce::File presetFile)
+{
+    currentPresetName = presetName.isNotEmpty() ? presetName : "Basic Preset";
+    currentPresetFile = presetFile;
+    presetLabelRefreshPending.store (true, std::memory_order_relaxed);
+}
+
+void KillaBEditor::markCurrentPresetDirty()
+{
+    hasUnsavedPresetChanges = true;
+    presetLabelRefreshPending.store (true, std::memory_order_relaxed);
+}
+
+void KillaBEditor::clearCurrentPresetDirty()
+{
+    hasUnsavedPresetChanges = false;
+    parameterChangePending.store (false, std::memory_order_relaxed);
+    presetLabelRefreshPending.store (true, std::memory_order_relaxed);
+}
+
+void KillaBEditor::updatePresetComboDisplay()
+{
+    const auto displayName = currentPresetName + (hasUnsavedPresetChanges ? " *" : "");
+    presetCombo.setText (displayName, juce::dontSendNotification);
+}
+
+void KillaBEditor::syncEditorControlsFromProcessorState()
+{
+    catCombo.setSelectedId (processorRef.getCurrentModeId(), juce::sendNotificationSync);
+    voicesBox.setSelectedId (processorRef.getCurrentVoicesId(), juce::sendNotificationSync);
 }
 
 void KillaBEditor::setupKnob (juce::Slider& knob, juce::Label& label, const juce::String& text, const juce::String& colourTag)
@@ -1137,9 +1240,12 @@ void KillaBEditor::setupPassiveKnob (juce::Slider& knob, juce::Label& label, con
 void KillaBEditor::populateFactoryPresets()
 {
     presetCombo.clear (juce::dontSendNotification);
-    presetCombo.setTextWhenNothingSelected ("Choose preset");
+    presetCombo.setTextWhenNothingSelected ("Basic Preset");
     presetCombo.setJustificationType (juce::Justification::centredLeft);
     refreshUserPresetFiles();
+    presetCombo.addSectionHeading ("START");
+    presetCombo.addItem ("Basic Preset", initPresetItemId);
+    presetCombo.addSeparator();
 
     auto displayCategory = [] (juce::String category)
     {
@@ -1187,7 +1293,8 @@ void KillaBEditor::populateFactoryPresets()
     }
 
     presetCombo.addSeparator();
-    presetCombo.addItem ("Save Current Preset...", savePresetItemId);
+    presetCombo.addItem ("Save Preset", savePresetItemId);
+    presetCombo.addItem ("Save Preset As...", savePresetAsItemId);
     presetCombo.addItem ("Load Preset File...", loadPresetItemId);
     presetCombo.addItem ("Refresh User Presets", refreshPresetsItemId);
 
@@ -1199,6 +1306,12 @@ void KillaBEditor::populateFactoryPresets()
         const int selectedId = presetCombo.getSelectedId();
         const int factoryPresetIndex = selectedId - 1;
         const int userPresetIndex = selectedId - userPresetIdBase;
+
+        if (selectedId == initPresetItemId)
+        {
+            applyInitPreset();
+            return;
+        }
 
         if (juce::isPositiveAndBelow (factoryPresetIndex, (int) factoryPresets.size()))
         {
@@ -1214,7 +1327,13 @@ void KillaBEditor::populateFactoryPresets()
 
         if (selectedId == savePresetItemId)
         {
-            launchPresetSaveChooser();
+            saveCurrentPreset();
+            return;
+        }
+
+        if (selectedId == savePresetAsItemId)
+        {
+            launchPresetSaveChooser (true);
             return;
         }
 
@@ -1227,9 +1346,11 @@ void KillaBEditor::populateFactoryPresets()
         if (selectedId == refreshPresetsItemId)
         {
             populateFactoryPresets();
-            resetPresetSelection();
+            updatePresetComboDisplay();
         }
     };
+
+    updatePresetComboDisplay();
 }
 
 void KillaBEditor::refreshUserPresetFiles()
@@ -1291,8 +1412,10 @@ void KillaBEditor::applyFactoryPreset (int presetIndex)
         ranged->setValueNotifyingHost (ranged->convertTo0to1 (preset.uiKnobs.lfoDepth));
 
     processorRef.setActiveDrumKit (preset.drumKitId);
-
+    setCurrentPresetState (preset.name, {});
+    clearCurrentPresetDirty();
     presetCombo.setSelectedId (presetIndex + 1, juce::dontSendNotification);
+    updatePresetComboDisplay();
 }
 
 void KillaBEditor::applyUserPreset (int presetIndex)
@@ -1303,15 +1426,20 @@ void KillaBEditor::applyUserPreset (int presetIndex)
     juce::ScopedValueSetter<bool> applyingPreset (isApplyingFactoryPreset, true);
 
     if (processorRef.loadPresetFromFile (userPresetFiles.getReference (presetIndex)))
+    {
+        syncEditorControlsFromProcessorState();
+        const auto file = userPresetFiles.getReference (presetIndex);
+        setCurrentPresetState (file.getFileNameWithoutExtension(), file);
+        clearCurrentPresetDirty();
         presetCombo.setSelectedId (userPresetIdBase + presetIndex, juce::dontSendNotification);
+        updatePresetComboDisplay();
+    }
     else
         resetPresetSelection();
 }
 
 void KillaBEditor::launchPresetLoadChooser()
 {
-    resetPresetSelection();
-
     presetFileChooser = std::make_unique<juce::FileChooser> (
         "Load Killer B preset",
         KillerBProcessor::getUserPresetDirectory(),
@@ -1327,25 +1455,29 @@ void KillaBEditor::launchPresetLoadChooser()
         const auto file = chooser.getResult();
         if (file.existsAsFile())
         {
-            safeThis->processorRef.loadPresetFromFile (file);
-            safeThis->populateFactoryPresets();
+            if (safeThis->processorRef.loadPresetFromFile (file))
+            {
+                safeThis->syncEditorControlsFromProcessorState();
+                safeThis->populateFactoryPresets();
+                safeThis->setCurrentPresetState (file.getFileNameWithoutExtension(), file);
+                safeThis->clearCurrentPresetDirty();
+            }
         }
 
-        safeThis->resetPresetSelection();
+        safeThis->updatePresetComboDisplay();
         safeThis->presetFileChooser.reset();
     });
 }
 
-void KillaBEditor::launchPresetSaveChooser()
+void KillaBEditor::launchPresetSaveChooser (bool)
 {
-    resetPresetSelection();
-
     const auto directory = KillerBProcessor::getUserPresetDirectory();
     directory.createDirectory();
+    const auto suggestedName = makeSafePresetFileName (currentPresetName);
 
     presetFileChooser = std::make_unique<juce::FileChooser> (
         "Save Killer B preset",
-        directory.getChildFile ("Killer B Preset.kbpreset"),
+        directory.getChildFile (suggestedName + ".kbpreset"),
         "*.kbpreset");
 
     juce::Component::SafePointer<KillaBEditor> safeThis (this);
@@ -1363,9 +1495,11 @@ void KillaBEditor::launchPresetSaveChooser()
             auto presetName = makeSafePresetFileName (file.getFileNameWithoutExtension());
             safeThis->processorRef.savePresetToFile (file, presetName);
             safeThis->populateFactoryPresets();
+            safeThis->setCurrentPresetState (presetName, file.withFileExtension (".kbpreset"));
+            safeThis->clearCurrentPresetDirty();
         }
 
-        safeThis->resetPresetSelection();
+        safeThis->updatePresetComboDisplay();
         safeThis->presetFileChooser.reset();
     });
 }
@@ -1373,7 +1507,7 @@ void KillaBEditor::launchPresetSaveChooser()
 void KillaBEditor::resetPresetSelection()
 {
     presetCombo.setSelectedId (0, juce::dontSendNotification);
-    presetCombo.setTextWhenNothingSelected ("Choose preset");
+    updatePresetComboDisplay();
 }
 
 void KillaBEditor::stepFactoryPreset (int delta)
@@ -1393,6 +1527,12 @@ void KillaBEditor::timerCallback()
 {
     refreshDisplayScaleIfNeeded();
     applyEffectiveScaleFactor();
+
+    if (parameterChangePending.exchange (false, std::memory_order_relaxed))
+        hasUnsavedPresetChanges = true;
+
+    if (presetLabelRefreshPending.exchange (false, std::memory_order_relaxed))
+        updatePresetComboDisplay();
 
     constexpr float decayPerTick = 0.88f;
     auto toNorm = [] (float rmsLinear)

@@ -733,6 +733,8 @@ void KillerBProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     auto state = apvts.copyState();
     state.setProperty ("drumKitId", activeDrumKitId, nullptr);
+    state.setProperty ("modeId", currentModeId, nullptr);
+    state.setProperty ("voicesId", currentVoicesId, nullptr);
     if (auto xml = state.createXml())
         copyXmlToBinary (*xml, destData);
 }
@@ -755,6 +757,8 @@ bool KillerBProcessor::savePresetToFile (const juce::File& file, const juce::Str
     auto state = apvts.copyState();
     state.setProperty ("presetName", presetName, nullptr);
     state.setProperty ("drumKitId", activeDrumKitId, nullptr);
+    state.setProperty ("modeId", currentModeId, nullptr);
+    state.setProperty ("voicesId", currentVoicesId, nullptr);
 
     if (auto xml = state.createXml())
         return xml->writeTo (target);
@@ -789,6 +793,8 @@ bool KillerBProcessor::loadPresetXml (const juce::XmlElement& xml)
         return false;
 
     const int drumKitId = (int) state.getProperty ("drumKitId", noDrumKitSelected);
+    currentModeId = (int) state.getProperty ("modeId", 1);
+    currentVoicesId = (int) state.getProperty ("voicesId", 1);
     apvts.replaceState (state);
     setActiveDrumKit (drumKitId);
     return true;

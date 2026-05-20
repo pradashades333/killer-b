@@ -43,7 +43,8 @@ private:
 };
 
 class KillaBEditor : public juce::AudioProcessorEditor,
-                     private juce::Timer
+                     private juce::Timer,
+                     private juce::AudioProcessorValueTreeState::Listener
 {
 public:
     explicit KillaBEditor (KillerBProcessor&);
@@ -58,6 +59,7 @@ private:
     void refreshDisplayScaleIfNeeded();
     void applyEffectiveScaleFactor();
     void timerCallback() override;
+    void parameterChanged (const juce::String& parameterID, float newValue) override;
 
     void setupKnob (juce::Slider& knob, juce::Label& label, const juce::String& text, const juce::String& colourTag);
     void setupVertSlider (juce::Slider& slider, juce::Label& label, const juce::String& text);
@@ -65,12 +67,19 @@ private:
     void setupPassiveKnob (juce::Slider& knob, juce::Label& label, const juce::String& text);
     void populateFactoryPresets();
     void refreshUserPresetFiles();
+    void applyInitPreset();
     void applyFactoryPreset (int presetIndex);
     void applyUserPreset (int presetIndex);
     void launchPresetLoadChooser();
-    void launchPresetSaveChooser();
+    void launchPresetSaveChooser (bool forceChooseLocation);
+    void saveCurrentPreset();
     void resetPresetSelection();
     void stepFactoryPreset (int delta);
+    void setCurrentPresetState (juce::String presetName, juce::File presetFile);
+    void markCurrentPresetDirty();
+    void clearCurrentPresetDirty();
+    void updatePresetComboDisplay();
+    void syncEditorControlsFromProcessorState();
 
     void paintBackground (juce::Graphics& g);
     void paintPanel (juce::Graphics& g, juce::Rectangle<int> bounds, const juce::String& title);
@@ -96,6 +105,11 @@ private:
     float appliedScaleFactor = 0.0f;
     juce::Array<juce::File> userPresetFiles;
     std::unique_ptr<juce::FileChooser> presetFileChooser;
+    juce::File currentPresetFile;
+    juce::String currentPresetName { "Basic Preset" };
+    bool hasUnsavedPresetChanges = false;
+    std::atomic<bool> parameterChangePending { false };
+    std::atomic<bool> presetLabelRefreshPending { true };
 
     juce::ComboBox presetCombo, catCombo;
     juce::TextButton presetPrevButton { "<" }, presetNextButton { ">" };

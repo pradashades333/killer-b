@@ -74,6 +74,10 @@ public:
 
     void setActiveDrumKit (int drumKitId);
     int getActiveDrumKit() const noexcept { return activeDrumKitId; }
+    void setCurrentModeId (int modeId) noexcept { currentModeId = modeId; }
+    int getCurrentModeId() const noexcept { return currentModeId; }
+    void setCurrentVoicesId (int voicesId) noexcept { currentVoicesId = voicesId; }
+    int getCurrentVoicesId() const noexcept { return currentVoicesId; }
 
     // -----------------------------------------------------------------------
     // Public — editor connects sliders / combo boxes and reads meter levels.
@@ -133,6 +137,8 @@ private:
     static constexpr int NUM_DRUM_VOICES = 32;
     static constexpr int NUM_DRUM_KITS = 7;
     int activeDrumKitId = -1;
+    int currentModeId = 1;
+    int currentVoicesId = 1;
     std::array<juce::Array<juce::File>, static_cast<size_t> (DrumSampleCategory::count)> drumKitFiles;
 
     // -----------------------------------------------------------------------
